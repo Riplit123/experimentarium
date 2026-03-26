@@ -1,0 +1,1671 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Rubik', 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0a2418 0%, #1a3c2e 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    color: #fff;
+    overflow-x: hidden;
+}
+
+/* Запрет выделения текста */
+* {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Исключения для элементов, которые могут требовать выделения */
+input, textarea, .allow-select {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* Научный фон с элементами */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 40% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+    z-index: -2;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 95vh;
+    width: 100%;
+}
+
+/* Шапка */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+    width: 100%;
+    position: relative;
+}
+
+header::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 150px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #10b981, #3b82f6, transparent);
+    border-radius: 2px;
+}
+
+h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+    letter-spacing: -0.3px;
+}
+
+header p {
+    font-size: 1rem;
+    color: #94a3b8;
+    font-weight: 400;
+    line-height: 1.4;
+}
+
+/* Область игры */
+.game-area {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 20px;
+    flex-grow: 1;
+    margin-bottom: 40px;
+}
+
+/* Панели */
+.panel {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+    border-radius: 20px;
+    padding: 20px;
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #10b981, #34d399, #3b82f6);
+}
+
+.panel-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 20px;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Левая панель - Выбор компонента */
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.ingredient-options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ingredient-option {
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+
+.ingredient-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.ingredient-option.active {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+}
+
+.option-icon {
+    font-size: 1.8rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+
+.option-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #f1f5f9;
+    flex: 1;
+}
+
+/* Статистика игрока (только защита) */
+.player-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #94a3b8;
+}
+
+.stat-value {
+    font-weight: 700;
+    color: #f1f5f9;
+    font-size: 1rem;
+}
+
+/* Статус подключения и информация о комнате */
+.connection-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.status-dot.connected {
+    background: #10b981;
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+}
+
+.status-dot.disconnected {
+    background: #ef4444;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+#connectionStatus {
+    font-size: 0.9rem;
+    color: #f1f5f9;
+}
+
+.room-info {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Центральная панель - Игра */
+.center-panel .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: center;
+}
+
+.panel-icon {
+    font-size: 1.8rem;
+}
+
+#ingredientName {
+    font-size: 1.3rem;
+}
+
+.game-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.attack-blocked-overlay {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid #ef4444;
+    border-radius: 12px;
+    padding: 15px;
+    animation: shake 0.5s ease-in-out;
+}
+
+.blocked-message {
+    color: #ef4444;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    font-size: 0.95rem;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.minigame-header {
+    text-align: center;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.minigame-header h3 {
+    color: #f1f5f9;
+    margin-bottom: 8px;
+    font-size: 1.2rem;
+}
+
+.minigame-header p {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.measurement-tool {
+    flex: 1;
+    min-height: 250px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-controls {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.control-button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 140px;
+}
+
+.control-button.primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.control-button.primary:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.control-button.primary:disabled {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.6;
+}
+
+.control-button.secondary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+}
+
+.control-button.secondary:hover:not(:disabled) {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.game-status {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.game-timer {
+    font-size: 1.1rem;
+    color: #fbbf24;
+    font-weight: 600;
+    padding: 12px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.timer-icon {
+    font-size: 1.2rem;
+}
+
+.timer-text {
+    color: #94a3b8;
+}
+
+.timer-value {
+    color: #fbbf24;
+    font-size: 1.3rem;
+    min-width: 30px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.game-feedback {
+    padding: 12px 15px;
+    border-radius: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.game-feedback.feedback-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.game-feedback.feedback-warning {
+    background: rgba(251, 191, 36, 0.1);
+    color: #fbbf24;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.game-feedback.feedback-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Правая панель - Собранные компоненты */
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.send-blocked-overlay {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px solid #ef4444;
+    border-radius: 12px;
+    padding: 15px;
+    animation: shake 0.5s ease-in-out;
+}
+
+.resources-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 5px;
+}
+
+.resources-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.resources-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.resources-list::-webkit-scrollbar-thumb {
+    background: #10b981;
+    border-radius: 3px;
+}
+
+.empty-message {
+    text-align: center;
+    color: #94a3b8;
+    padding: 40px 20px;
+    font-style: italic;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    opacity: 0.5;
+}
+
+.empty-text {
+    font-size: 1rem;
+}
+
+.resource-item {
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 3px solid #10b981;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+}
+
+.resource-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.resource-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.resource-icon {
+    font-size: 1.5rem;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.resource-name {
+    font-weight: 600;
+    color: #f1f5f9;
+    font-size: 0.95rem;
+}
+
+.send-button {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.send-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+    background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.send-button:disabled {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Стили для мини-игр */
+.dew-collection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.flask {
+    width: 80px;
+    height: 140px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid #10b981;
+    border-radius: 0 0 15px 15px;
+    position: relative;
+    overflow: hidden;
+}
+
+.liquid-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: linear-gradient(to top, #0ea5e9, #3b82f6, #2563eb);
+    border-radius: 0 0 13px 13px;
+    transition: height 0.3s ease;
+    z-index: 2;
+}
+
+.dew-target {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #fbbf24;
+    z-index: 3;
+    box-shadow: 0 0 5px #fbbf24;
+}
+
+.dew-drops {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.drop {
+    position: absolute;
+    width: 5px;
+    height: 7px;
+    background: linear-gradient(to bottom, #3b82f6, #2563eb);
+    border-radius: 50%;
+    animation: dropFall 0.8s linear forwards;
+    z-index: 1;
+}
+
+@keyframes dropFall {
+    0% {
+        top: -10px;
+        opacity: 1;
+        transform: scale(0.8);
+    }
+    70% {
+        opacity: 1;
+    }
+    100% {
+        top: 100%;
+        opacity: 0;
+        transform: scale(1);
+    }
+}
+
+.dew-stats {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin-bottom: 5px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.dew-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.dew-stat-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.dew-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #3b82f6;
+    text-shadow: 0 0 5px #3b82f6;
+}
+
+.dew-stat-total {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-left: 2px;
+}
+
+.dew-collection .instruction {
+    font-size: 0.85rem;
+    color: #c8e6c9;
+    text-align: center;
+    margin-top: 5px;
+}
+
+/* Стили для травы */
+.herb-collection {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.herb-stem {
+    width: 30px;
+    height: 150px;
+    background: linear-gradient(to right, #5d4037, #3e2723);
+    border-radius: 15px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #795548;
+}
+
+.herb-growth {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 0%;
+    background: linear-gradient(to top, #10b981, #059669, #047857);
+    border-radius: 15px;
+    transition: height 0.1s;
+    z-index: 1;
+}
+
+.herb-min, .herb-target {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    border-radius: 1px;
+    z-index: 2;
+}
+
+.herb-min {
+    background: #ef4444;
+    box-shadow: 0 0 5px #ef4444;
+}
+
+.herb-target {
+    background: #fbbf24;
+    box-shadow: 0 0 5px #fbbf24;
+}
+
+.herb-stats {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.herb-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 5px;
+}
+
+.herb-stat-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.herb-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #10b981;
+    text-shadow: 0 0 5px #10b981;
+}
+
+.herb-stat-unit {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.herb-collection .instruction {
+    font-size: 0.85rem;
+    color: #c8e6c9;
+    text-align: center;
+    margin: 3px 0;
+}
+
+/* Стили для новой мини-игры с углеродом */
+.soot-collection {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 10px;
+}
+
+.carbon-game-header {
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.carbon-game-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0ff;
+    text-shadow: 0 0 5px #0ff;
+    margin-bottom: 4px;
+    font-family: 'Orbitron', 'Rubik', sans-serif;
+}
+
+.carbon-game-subtitle {
+    font-size: 0.9rem;
+    color: #c8e6c9;
+    opacity: 0.9;
+}
+
+.carbon-game-area {
+    width: 100%;
+    height: 180px;
+    background: radial-gradient(circle at center, #000, #111 50%, #000);
+    position: relative;
+    overflow: hidden;
+    border: 2px solid #0ff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+    margin-bottom: 8px;
+    flex-shrink: 0;
+}
+
+.carbon-game-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.carbon-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 5px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.carbon-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+}
+
+.carbon-stat-label {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.carbon-stat-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #0ff;
+    text-shadow: 0 0 5px #0ff;
+}
+
+.carbon-stat-total {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-left: 2px;
+}
+
+.carbon-stat-unit {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-left: 2px;
+}
+
+.carbon-game-instruction {
+    text-align: center;
+    padding: 6px;
+    background: rgba(0, 255, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.carbon-game-instruction .instruction {
+    font-size: 0.85rem;
+    color: #c8e6c9;
+    margin: 3px 0;
+}
+
+/* Атомы углерода */
+.carbon-atom {
+    position: absolute;
+    background: radial-gradient(circle at 30% 30%, #0ff, #0088ff 70%);
+    border: 1px solid #0ff;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 8px #0ff, inset 0 0 5px rgba(255, 255, 255, 0.5);
+    transition: transform 0.1s, box-shadow 0.1s;
+    z-index: 10;
+}
+
+.carbon-atom:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 12px #0ff, inset 0 0 8px rgba(255, 255, 255, 0.7);
+}
+
+.carbon-atom::after {
+    content: '⚫';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.6em;
+    opacity: 0.8;
+}
+
+/* Анимации для атомов углерода */
+@keyframes atomAppear {
+    from {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes atomDisappear {
+    from {
+        transform: scale(1);
+        opacity: 1;
+    }
+    to {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+}
+
+@keyframes atomCollect {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(0);
+        opacity: 0;
+    }
+}
+
+/* Уведомления */
+.team-notification {
+    position: fixed;
+    top: 30px;
+    right: 30px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(59, 130, 246, 0.95));
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transform: translateX(400px);
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    max-width: 320px;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.team-notification.show {
+    transform: translateX(0);
+}
+
+.notification-content {
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.notification-text {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.notification-time {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+}
+
+.notification-character {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-character-emoji {
+    font-size: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+/* Модальное окно подсказки */
+.hint-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+}
+
+.hint-modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.hint-modal-content {
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border-radius: 20px;
+    padding: 30px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 3px solid #10b981;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+    position: relative;
+}
+
+.hint-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid rgba(16, 185, 129, 0.5);
+}
+
+.hint-modal-header h2 {
+    color: #10b981;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hint-close-button {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 2.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.hint-close-button:hover {
+    color: #f1f5f9;
+    transform: scale(1.1);
+}
+
+.hint-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.hint-step {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 15px;
+    padding: 20px;
+    border-left: 5px solid #10b981;
+    transition: all 0.3s ease;
+}
+
+.hint-step:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-3px);
+}
+
+.hint-step-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hint-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: linear-gradient(135deg, #10b981, #3b82f6);
+    border-radius: 50%;
+    font-weight: bold;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.hint-step-content {
+    color: #cbd5e1;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.hint-step-content ul {
+    margin-left: 20px;
+    margin-top: 8px;
+}
+
+.hint-step-content li {
+    margin-bottom: 5px;
+}
+
+/* Стили обучения */
+.tutorial-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.tutorial-overlay.active {
+    opacity: 1;
+    pointer-events: all;
+}
+
+.tutorial-backdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(3px);
+}
+
+.tutorial-main-overlay {
+    position: relative;
+    width: 80%;
+    max-width: 800px;
+    height: 300px;
+    background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+    border-radius: 20px;
+    border: 3px solid #10b981;
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.7);
+    padding: 30px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.5s ease;
+    z-index: 2001;
+}
+
+.tutorial-main-overlay.active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.tutorial-main-content {
+    text-align: center;
+    color: #f1f5f9;
+    width: 100%;
+}
+
+.tutorial-main-content h3 {
+    font-size: 2rem;
+    color: #10b981;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tutorial-main-content p {
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tutorial-character-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transform: translateX(100px);
+    opacity: 0;
+    transition: all 0.5s ease 0.3s;
+    z-index: 2001;
+}
+
+.tutorial-character-container.active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.tutorial-character-image {
+    width: 380px;
+    height: 440px;
+    object-fit: contain;
+    filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.5));
+}
+
+.tutorial-dialogue-overlay {
+    position: relative;
+    background: rgba(30, 41, 59, 0.95);
+    border-radius: 15px;
+    padding: 20px;
+    min-width: 300px;
+    max-width: 400px;
+    margin-bottom: 15px;
+    border: 2px solid #10b981;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+    transform: translateY(10px);
+    opacity: 0;
+    transition: all 0.4s ease 0.1s;
+}
+
+.tutorial-dialogue-overlay.active {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.tutorial-dialogue-overlay::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    right: 50px;
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 15px solid #10b981;
+}
+
+#tutorialDialogueText {
+    font-size: 1.1rem;
+    line-height: 1.5;
+    color: #f1f5f9;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.tutorial-progress-bar {
+    height: 8px;
+    background: #1e293b;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+    margin-bottom: 15px;
+}
+
+.tutorial-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #34d399);
+    width: 0%;
+    transition: width 0.1s linear;
+    border-radius: 4px;
+}
+
+.skip-tutorial-button {
+    background: rgba(239, 68, 68, 0.3);
+    border: 2px solid #ef4444;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+    width: 100%;
+    font-size: 0.9rem;
+}
+
+.skip-tutorial-button:hover {
+    background: rgba(239, 68, 68, 0.5);
+    transform: translateY(-2px);
+}
+
+/* Индикаторы блокировки */
+.blocked-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.2rem;
+    background: rgba(239, 68, 68, 0.8);
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    animation: pulse 1s infinite;
+}
+
+.ingredient-option.blocked {
+    background: rgba(239, 68, 68, 0.2) !important;
+    border-color: #ef4444 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.ingredient-option.blocked:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Атаки и защита уведомления */
+.attack-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95));
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    z-index: 2000;
+    max-width: 400px;
+    animation: slideInDown 0.5s ease;
+    box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+    font-weight: 600;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.defense-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    z-index: 2000;
+    max-width: 400px;
+    animation: slideInDown 0.5s ease;
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+    font-weight: 600;
+    text-align: center;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 1200px) {
+    .game-area {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .ingredient-options {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .ingredient-option {
+        min-width: 180px;
+    }
+    
+    .hint-modal-content {
+        padding: 20px;
+        max-height: 90vh;
+    }
+    
+    .hint-step-title {
+        font-size: 1.1rem;
+    }
+    
+    .hint-step-content {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 768px) {
+    h1 {
+        font-size: 1.8rem;
+    }
+    
+    header p {
+        font-size: 0.9rem;
+    }
+    
+    .game-controls {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .control-button {
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    .team-notification {
+        right: 20px;
+        left: 20px;
+        max-width: calc(100% - 40px);
+    }
+
+    .tutorial-main-overlay {
+        height: 250px;
+        padding: 20px;
+    }
+    
+    .tutorial-main-content h3 {
+        font-size: 1.4rem;
+    }
+    
+    .tutorial-main-content p {
+        font-size: 1rem;
+    }
+    
+    .tutorial-character-image {
+        width: 200px;
+        height: 250px;
+    }
+    
+    .tutorial-dialogue-overlay {
+        min-width: 250px;
+        max-width: 300px;
+    }
+    
+    .notification-character {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .notification-character-emoji {
+        font-size: 2.5rem;
+    }
+    
+    .team-notification {
+        max-width: 280px;
+    }
+
+    .carbon-game-area {
+        height: 150px;
+    }
+    
+    .carbon-game-title {
+        font-size: 1.1rem;
+    }
+    
+    .carbon-game-subtitle {
+        font-size: 0.8rem;
+    }
+    
+    .carbon-stat-value {
+        font-size: 1rem;
+    }
+    
+    .flask {
+        width: 70px;
+        height: 120px;
+    }
+    
+    .herb-stem {
+        width: 25px;
+        height: 130px;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    header {
+        padding: 15px 0;
+    }
+    
+    .panel {
+        padding: 15px;
+    }
+    
+    .ingredient-options {
+        flex-direction: column;
+    }
+    
+    .ingredient-option {
+        width: 100%;
+        min-width: auto;
+    }
+    
+    .tutorial-main-overlay {
+        height: 200px;
+        padding: 15px;
+    }
+    
+    .tutorial-main-content h3 {
+        font-size: 1.2rem;
+    }
+    
+    .tutorial-main-content p {
+        font-size: 0.9rem;
+    }
+    
+    .tutorial-character-image {
+        width: 150px;
+        height: 180px;
+    }
+    
+    .team-notification {
+        max-width: 260px;
+        padding: 15px;
+    }
+    
+    .notification-character {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .notification-character-emoji {
+        font-size: 2rem;
+    }
+    
+    .notification-text {
+        font-size: 0.85rem;
+    }
+
+    .hint-button {
+        width: 50px;
+        height: 50px;
+        font-size: 1.8rem;
+        bottom: 15px;
+        right: 15px;
+    }
+
+    .hint-modal-header h2 {
+        font-size: 1.4rem;
+    }
+
+    .hint-step {
+        padding: 15px;
+    }
+
+    .hint-step-title {
+        font-size: 1rem;
+    }
+
+    .hint-step-number {
+        width: 25px;
+        height: 25px;
+        font-size: 0.9rem;
+    }
+
+    .carbon-game-area {
+        height: 120px;
+    }
+    
+    .carbon-game-title {
+        font-size: 1rem;
+    }
+    
+    .carbon-game-subtitle {
+        font-size: 0.75rem;
+    }
+    
+    .carbon-stat-label {
+        font-size: 0.7rem;
+    }
+    
+    .carbon-stat-value {
+        font-size: 0.9rem;
+    }
+    
+    .flask {
+        width: 60px;
+        height: 100px;
+    }
+    
+    .herb-stem {
+        width: 20px;
+        height: 110px;
+    }
+}
+
+/* Анимация пульсации для индикатора блокировки */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}

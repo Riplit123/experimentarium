@@ -1,0 +1,3253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Химик - Экспериментариум</title>
+    <base href="/">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rubik', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a2418 0%, #1a3c2e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Научный фон с элементами */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+            z-index: -2;
+        }
+
+        .science-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            flex: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            width: 100%;
+            position: relative;
+        }
+
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #10b981, #3b82f6, transparent);
+            border-radius: 2px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #10b981 0%, #34d399 50%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 20px rgba(16, 185, 129, 0.2);
+            letter-spacing: -0.3px;
+        }
+
+        header p {
+            font-size: 1rem;
+            color: #94a3b8;
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        /* НОВЫЙ МАКЕТ - 2 колонки */
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 20px;
+            flex: 1;
+            margin-bottom: 20px;
+            max-height: 80vh;
+            min-height: 600px;
+            width: 100%;
+        }
+
+        .panel {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 20px;
+            padding: 20px;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #10b981, #34d399, #3b82f6);
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 15px;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        /* Левая панель - теперь вертикальный стек из двух блоков */
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .left-panel-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+            gap: 20px;
+        }
+
+        .raw-materials-section {
+            flex: 1.3;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .raw-materials-section .panel-title {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+        }
+
+        .created-chemicals-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid rgba(16, 185, 129, 0.5);
+            position: relative;
+        }
+
+        .created-chemicals-section::before {
+            content: '';
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, #10b981, #3b82f6);
+            border-radius: 3px 3px 0 0;
+        }
+
+        /* Список сырья */
+        .ore-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            min-height: 0;
+            align-content: start;
+        }
+
+        .ore-item {
+            padding: 8px;
+            border-radius: 12px;
+            color: white;
+            text-align: center;
+            cursor: grab;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .ore-item:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            border-color: rgba(16, 185, 129, 0.5);
+        }
+
+        .ore-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .ore-item.used {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .ore-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .ore-name {
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        /* Центральная панель */
+        .center-panel-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .lab-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .lab-experiment {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .lab-technologies {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .weight-selection {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+            margin-bottom: 15px;
+        }
+
+        .weight-selection h3 {
+            color: #60a5fa;
+            margin-bottom: 12px;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .weight-options {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+        }
+
+        .weight-option {
+            padding: 8px;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .weight-option:hover {
+            background: rgba(30, 41, 59, 0.8);
+            transform: translateY(-2px);
+        }
+
+        .weight-option.selected {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .weight-name {
+            font-weight: 700;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        .crucible-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex: 1;
+            justify-content: center;
+            min-height: 0;
+            margin-bottom: 15px;
+        }
+
+        .crucible {
+            width: 140px;
+            height: 200px;
+            background: linear-gradient(145deg, rgba(139, 69, 19, 0.2), rgba(93, 64, 55, 0.3));
+            border: 3px solid #8b4513;
+            border-radius: 10px 10px 0 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            flex-shrink: 0;
+        }
+
+        .crucible::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: rgba(139, 69, 19, 0.6);
+            border-top: 2px solid #5d4037;
+        }
+
+        .crucible-fill {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            display: flex;
+            flex-direction: column-reverse;
+            transition: height 0.5s;
+        }
+
+        .metal-layer {
+            width: 100%;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            flex: 1;
+        }
+
+        .metal-layer:hover {
+            filter: brightness(1.2);
+            transform: scaleX(1.02);
+        }
+
+        .metal-layer-info {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border-radius: 3px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .metal-layer:hover .metal-layer-info {
+            opacity: 1;
+        }
+
+        .mixing-indicator-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .indicator-label {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 0.9rem;
+        }
+
+        .mixing-indicator {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .mixing-indicator.error {
+            animation: blink-red 0.6s ease-in-out 3;
+        }
+
+        @keyframes blink-red {
+            0%, 100% { 
+                border-color: rgba(255, 255, 255, 0.1);
+                box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+            }
+            50% { 
+                border-color: #ef4444;
+                box-shadow: 0 0 10px rgba(239, 68, 68, 0.5), inset 0 0 10px rgba(239, 68, 68, 0.3);
+            }
+        }
+
+        .indicator-status {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease-out, background-color 0.5s ease-out;
+        }
+
+        .indicator-text {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .indicator-text.red {
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .indicator-text.orange {
+            color: #fbbf24;
+            background: rgba(251, 191, 36, 0.1);
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .indicator-text.green {
+            color: #34d399;
+            background: rgba(16, 185, 129, 0.1);
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .casting-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .control-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 120px;
+        }
+
+        .control-button.primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+
+        .control-button.primary:hover:not(:disabled) {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .control-button.primary:disabled {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .control-button.secondary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .control-button.secondary:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+
+        .control-button.danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+
+        .control-button.send-button {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            min-width: auto;
+        }
+
+        /* Созданные химикаты в левой панели */
+        .resources-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 5px;
+            min-height: 0;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #94a3b8;
+            padding: 15px;
+            font-style: italic;
+            font-size: 0.9rem;
+        }
+
+        .resource-item {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #10b981;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .resource-name {
+            font-weight: 600;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        /* Технологии в центральной панели */
+        .technologies-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .technologies-header h3 {
+            font-size: 1rem;
+            color: #60a5fa;
+            margin: 0;
+        }
+
+        .add-recipe-button {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            flex-shrink: 0;
+        }
+
+        .add-recipe-button:hover:not(:disabled) {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+
+        .add-recipe-button:disabled {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .technologies-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 5px;
+            min-height: 0;
+        }
+
+        .recipe-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 12px;
+            border-left: 4px solid #10b981;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .recipe-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-3px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .recipe-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .recipe-name {
+            font-weight: 600;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+            flex-grow: 1;
+            margin-right: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .delete-recipe-button {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .delete-recipe-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        }
+
+        .recipe-metals {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 8px;
+        }
+
+        .recipe-metal-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            font-size: 0.7rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .recipe-metal-color {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            flex-shrink: 0;
+        }
+
+        .apply-recipe-button {
+            margin-top: 10px;
+            width: 100%;
+            padding: 6px;
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .apply-recipe-button:hover {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Модальное окно */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+            border-radius: 20px;
+            padding: 25px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h3 {
+            color: #f1f5f9;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: #f1f5f9;
+            transform: scale(1.1);
+        }
+
+        .modal-body {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-group label {
+            color: #60a5fa;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .modal-weight-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .modal-weight-option {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            font-size: 0.85rem;
+        }
+
+        .modal-weight-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .modal-weight-option.selected {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .recipe-metals-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+        }
+
+        .recipe-metal-selector {
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .recipe-metal-selector:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .recipe-metal-selector.selected {
+            border-color: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .selected-metals-count {
+            text-align: center;
+            color: #10b981;
+            font-weight: 600;
+            margin: 12px 0;
+            font-size: 0.85rem;
+        }
+
+        .selected-metals {
+            min-height: 80px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: flex-start;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .selected-metal-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .selected-metal-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .remove-metal-button {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .remove-metal-button:hover {
+            transform: scale(1.1);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Уведомления */
+        .team-notification {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(59, 130, 246, 0.9));
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateX(400px);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-width: 300px;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .team-notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-content {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .notification-text {
+            font-size: 0.95rem;
+            line-height: 1.4;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .notification-time {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+        }
+
+        .notification-character {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-character img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .notification-character-emoji {
+            font-size: 3rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Анимации */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%) translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Парящие элементы */
+        .floating-element {
+            position: fixed;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle at 30% 30%, rgba(16, 185, 129, 0.15), transparent 70%);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        .floating-element:nth-child(1) {
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+
+        .floating-element:nth-child(2) {
+            top: 70%;
+            right: 10%;
+            animation-delay: -2s;
+            background: radial-gradient(circle at 70% 30%, rgba(59, 130, 246, 0.15), transparent 70%);
+        }
+
+        .floating-element:nth-child(3) {
+            bottom: 20%;
+            left: 15%;
+            animation-delay: -4s;
+            background: radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.15), transparent 70%);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        /* Стили для обучения с персонажем */
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        .tutorial-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .tutorial-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
+        }
+        
+        .tutorial-main-overlay {
+            position: relative;
+            width: 80%;
+            max-width: 800px;
+            height: 300px;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+            border-radius: 20px;
+            border: 3px solid #10b981;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.7);
+            padding: 30px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.5s ease;
+            z-index: 2001;
+        }
+        
+        .tutorial-main-overlay.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .tutorial-main-content {
+            text-align: center;
+            color: #f1f5f9;
+            width: 100%;
+        }
+        
+        .tutorial-main-content h3 {
+            font-size: 2rem;
+            color: #10b981;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .tutorial-main-content p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .tutorial-character-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: translateX(100px);
+            opacity: 0;
+            transition: all 0.5s ease 0.3s;
+            z-index: 2001;
+        }
+        
+        .tutorial-character-container.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .tutorial-character-image {
+            width: 380px;
+            height: 440px;
+            object-fit: contain;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.5));
+        }
+        
+        .tutorial-dialogue-overlay {
+            position: relative;
+            background: rgba(30, 41, 59, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            min-width: 300px;
+            max-width: 400px;
+            margin-bottom: 15px;
+            border: 2px solid #10b981;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            transform: translateY(10px);
+            opacity: 0;
+            transition: all 0.4s ease 0.1s;
+        }
+        
+        .tutorial-dialogue-overlay.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .tutorial-dialogue-overlay::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            right: 50px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 15px solid #10b981;
+        }
+        
+        #tutorialDialogueText {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            color: #f1f5f9;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .tutorial-progress-bar {
+            height: 8px;
+            background: #1e293b;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .tutorial-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 4px;
+        }
+        
+        .skip-tutorial-button {
+            background: rgba(239, 68, 68, 0.3);
+            border: 2px solid #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+        
+        .skip-tutorial-button:hover {
+            background: rgba(239, 68, 68, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Кнопка подсказки в правом нижнем углу */
+        .hint-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+            color: white;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            font-size: 2.5rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+            z-index: 900;
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+
+        .hint-button:hover {
+            transform: scale(1.1) rotate(10deg);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+
+        /* Модальное окно подсказки */
+        .hint-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+        }
+
+        .hint-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .hint-modal-content {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 3px solid #10b981;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+
+        .hint-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid rgba(16, 185, 129, 0.5);
+        }
+
+        .hint-modal-header h2 {
+            color: #10b981;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hint-close-button {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 2.5rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .hint-close-button:hover {
+            color: #f1f5f9;
+            transform: scale(1.1);
+        }
+
+        .hint-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .hint-step {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid #10b981;
+            transition: all 0.3s ease;
+        }
+
+        .hint-step:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-3px);
+        }
+
+        .hint-step-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hint-step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #10b981, #3b82f6);
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .hint-step-content {
+            color: #cbd5e1;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .hint-step-demo {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .hint-weight-options {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .hint-weight-option {
+            padding: 12px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .hint-indicator-explanation {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .hint-indicator-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .hint-indicator-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .hint-indicator-red {
+            background-color: #ef4444;
+        }
+
+        .hint-indicator-orange {
+            background-color: #fbbf24;
+        }
+
+        .hint-indicator-green {
+            background-color: #10b981;
+        }
+
+        .hint-final-note {
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: center;
+            border: 2px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .hint-final-note h3 {
+            color: #10b981;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        /* Стили для заблокированных элементов */
+        .blocked {
+            opacity: 0.5;
+            pointer-events: none;
+            position: relative;
+        }
+
+        .blocked::after {
+            content: "🚫";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2rem;
+            z-index: 10;
+        }
+
+        /* Лимиты */
+        .limit-indicator {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 5px;
+            font-style: italic;
+            flex-shrink: 0;
+        }
+
+        /* Адаптивность */
+        @media (max-width: 1200px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                max-height: none;
+                min-height: auto;
+            }
+            
+            .lab-container {
+                flex-direction: column;
+            }
+            
+            .lab-technologies {
+                height: 300px;
+            }
+            
+            .ore-list {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .tutorial-main-overlay {
+                width: 90%;
+                height: 250px;
+            }
+            
+            .tutorial-main-content h3 {
+                font-size: 1.7rem;
+            }
+            
+            .tutorial-main-content p {
+                font-size: 1.1rem;
+            }
+            
+            .tutorial-character-image {
+                width: 150px;
+                height: 200px;
+            }
+
+            .hint-weight-options {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .ore-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+                max-height: none;
+                min-height: auto;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            header p {
+                font-size: 0.9rem;
+            }
+            
+            .casting-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .control-button {
+                width: 100%;
+                max-width: 280px;
+            }
+            
+            .crucible {
+                width: 120px;
+                height: 180px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+            
+            .floating-element {
+                display: none;
+            }
+            
+            .team-notification {
+                right: 20px;
+                left: 20px;
+                max-width: calc(100% - 40px);
+            }
+
+            .tutorial-main-overlay {
+                height: 200px;
+                padding: 20px;
+            }
+            
+            .tutorial-main-content h3 {
+                font-size: 1.4rem;
+            }
+            
+            .tutorial-main-content p {
+                font-size: 1rem;
+            }
+            
+            .tutorial-character-image {
+                width: 120px;
+                height: 160px;
+            }
+            
+            .tutorial-dialogue-overlay {
+                min-width: 250px;
+                max-width: 300px;
+            }
+            
+            .notification-character {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .notification-character-emoji {
+                font-size: 2.5rem;
+            }
+            
+            .team-notification {
+                max-width: 280px;
+            }
+
+            .hint-button {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .hint-modal-content {
+                padding: 20px;
+                max-height: 90vh;
+            }
+
+            .hint-step-title {
+                font-size: 1.1rem;
+            }
+
+            .hint-step-content {
+                font-size: 0.9rem;
+            }
+
+            .hint-weight-options {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            header {
+                padding: 15px 0;
+            }
+            
+            .panel {
+                padding: 15px;
+            }
+            
+            .ore-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .weight-options {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .tutorial-main-overlay {
+                height: 180px;
+                padding: 15px;
+            }
+            
+            .tutorial-main-content h3 {
+                font-size: 1.2rem;
+            }
+            
+            .tutorial-main-content p {
+                font-size: 0.9rem;
+            }
+            
+            .tutorial-character-image {
+                width: 100px;
+                height: 140px;
+            }
+            
+            .team-notification {
+                max-width: 260px;
+                padding: 15px;
+            }
+            
+            .notification-character {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .notification-character-emoji {
+                font-size: 2rem;
+            }
+            
+            .notification-text {
+                font-size: 0.85rem;
+            }
+
+            .hint-button {
+                width: 50px;
+                height: 50px;
+                font-size: 1.8rem;
+                bottom: 15px;
+                right: 15px;
+            }
+
+            .hint-modal-header h2 {
+                font-size: 1.4rem;
+            }
+
+            .hint-step {
+                padding: 15px;
+            }
+
+            .hint-step-title {
+                font-size: 1rem;
+            }
+
+            .hint-step-number {
+                width: 25px;
+                height: 25px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Оверлей обучения с персонажем -->
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-backdrop"></div>
+        <div class="tutorial-main-overlay" id="tutorialMainOverlay"></div>
+        <div class="tutorial-character-container" id="tutorialCharacterContainer">
+            <div class="tutorial-dialogue-overlay" id="tutorialDialogue">
+                <p id="tutorialDialogueText">Добро пожаловать в игру!</p>
+                <div class="tutorial-progress-bar">
+                    <div class="tutorial-progress-fill" id="tutorialProgressFill"></div>
+                </div>
+                <button class="skip-tutorial-button" id="skipTutorialButton">Пропустить обучение</button>
+            </div>
+            <img id="tutorialCharacterImage" src="" alt="Персонаж обучения" class="tutorial-character-image">
+        </div>
+    </div>
+
+    <!-- Парящие элементы -->
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    
+    <!-- Научная сетка -->
+    <div class="science-grid"></div>
+
+    <!-- Кнопка подсказки -->
+    <button class="hint-button" id="hintButton">?</button>
+
+    <div class="container">
+        <header>
+            <h1>Лаборатория химика</h1>
+            <p>Создавайте химикаты и отправляйте их Лаборанту</p>
+        </header>
+
+        <div class="game-area">
+            <!-- Левая панель - теперь с двумя вертикальными секциями -->
+            <div class="panel left-panel">
+                <div class="left-panel-content">
+                    <!-- Верхняя секция: сырье -->
+                    <div class="raw-materials-section">
+                        <div class="panel-title">Сырье для химикатов</div>
+                        <div class="ore-list" id="oreList">
+                            <!-- Металлы будут добавляться через JS -->
+                        </div>
+                    </div>
+                    
+                    <!-- Нижняя секция: созданные химикаты -->
+                    <div class="created-chemicals-section">
+                        <div class="panel-title">Созданные химикаты</div>
+                        <div class="resources-list" id="resourcesList">
+                            <div class="empty-message">Химикаты еще не созданы</div>
+                        </div>
+                        <div class="limit-indicator" id="chemicalLimitIndicator">Максимум: 5 химикатов</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Центральная панель -->
+            <div class="panel center-panel">
+                <div class="panel-title">Лабораторный стенд</div>
+                
+                <div class="center-panel-content">
+                    <div class="lab-container">
+                        <!-- Левая часть: эксперимент -->
+                        <div class="lab-experiment">
+                            <div class="weight-selection">
+                                <h3>Выберите количество химиката</h3>
+                                <div class="weight-options" id="weightOptions">
+                                    <!-- Опции выбора номинала будут добавлены через JS -->
+                                </div>
+                            </div>
+                            
+                            <div class="crucible-container">
+                                <div class="crucible" id="crucible">
+                                    <div class="crucible-fill" id="crucibleFill">
+                                        <!-- Слои металлов будут добавляться динамически -->
+                                    </div>
+                                </div>
+                                
+                                <div class="mixing-indicator-container">
+                                    <div class="indicator-label">Соответствие рецепту:</div>
+                                    <div class="mixing-indicator" id="mixingIndicator">
+                                        <div class="indicator-status" id="indicatorStatus"></div>
+                                    </div>
+                                    <div class="indicator-text" id="indicatorText">
+                                        Перетаскивайте сырье в колбу
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="casting-controls">
+                                <button class="control-button primary" id="castWeightButton" disabled>Создать химикат</button>
+                                <button class="control-button secondary" id="emptyCrucibleButton">Опустошить колбу</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Правая часть: технологии -->
+                        <div class="lab-technologies">
+                            <div class="technologies-header">
+                                <h3>Технологии создания</h3>
+                                <button class="add-recipe-button" id="addRecipeButton" title="Максимум 5 рецептов">+</button>
+                            </div>
+                            <div class="technologies-list" id="technologiesList">
+                                <div class="empty-message">Нет сохраненных рецептов</div>
+                            </div>
+                            <div class="limit-indicator" id="recipeLimitIndicator">Максимум: 5 рецептов</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для создания рецепта -->
+    <div class="modal-overlay" id="recipeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Создание рецепта</h3>
+                <button class="close-button" id="closeRecipeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Выберите количество химиката:</label>
+                    <div class="modal-weight-options" id="modalWeightOptions">
+                        <!-- Опции выбора номинала для рецепта -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Выберите сырье для рецепта:</label>
+                    <div class="recipe-metals-list" id="recipeMetalsList">
+                        <!-- Металлы для выбора в рецепте -->
+                    </div>
+                    <div class="selected-metals-count">
+                        Выбрано: <span id="selectedCount">0</span> сырья
+                    </div>
+                    <div class="selected-metals" id="selectedMetals">
+                        <div class="empty-message">Кликайте на сырье, чтобы добавить в рецепт</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="control-button secondary" id="cancelRecipeButton">Отмена</button>
+                <button class="control-button primary" id="saveRecipeButton" disabled>Сохранить рецепт</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно подсказки -->
+    <div class="hint-modal-overlay" id="hintModal">
+        <div class="hint-modal-content">
+            <div class="hint-modal-header">
+                <h2><span class="hint-step-number">?</span> Этапы создания химикатов</h2>
+                <button class="hint-close-button" id="hintCloseButton">&times;</button>
+            </div>
+            <div class="hint-steps">
+                <div class="hint-step">
+                    <div class="hint-step-title">
+                        <span class="hint-step-number">1</span>
+                        Выбор количества химиката
+                    </div>
+                    <div class="hint-step-demo">
+                        <div class="hint-weight-options">
+                            <div class="hint-weight-option">1 ед.</div>
+                            <div class="hint-weight-option">2 ед.</div>
+                            <div class="hint-weight-option">5 ед.</div>
+                            <div class="hint-weight-option">10 ед.</div>
+                            <div class="hint-weight-option">20 ед.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hint-step">
+                    <div class="hint-step-title">
+                        <span class="hint-step-number">2</span>
+                        Выбор сырья из левой панели (зажать ЛКМ на выбранном сырье и перенести в колбу)
+                    </div>
+                </div>
+                
+                <div class="hint-step">
+                    <div class="hint-step-title">
+                        <span class="hint-step-number">3</span>
+                        Работа с индикатором под колбой
+                    </div>
+                    <div class="hint-step-demo">
+                        <div class="hint-indicator-explanation">
+                            <div class="hint-indicator-item">
+                                <div class="hint-indicator-color hint-indicator-red"></div>
+                                <span><strong>Красный</strong> - неправильная комбинация сырья</span>
+                            </div>
+                            <div class="hint-indicator-item">
+                                <div class="hint-indicator-color hint-indicator-orange"></div>
+                                <span><strong>Оранжевый</strong> - частичное совпадение с рецептом</span>
+                            </div>
+                            <div class="hint-indicator-item">
+                                <div class="hint-indicator-color hint-indicator-green"></div>
+                                <span><strong>Зеленый 100%</strong> - правильная комбинация! Можно создавать химикат</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="hint-step">
+                    <div class="hint-step-title">
+                        <span class="hint-step-number">4</span>
+                        Подборка комбинаций сырья для рецепта
+                    </div>
+                </div>
+                
+                <div class="hint-step">
+                    <div class="hint-step-title">
+                        <span class="hint-step-number">5</span>
+                        Отправка химикатов Лаборанту
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Обновленное уведомление с персонажем ПОД текстом -->
+    <div class="team-notification" id="teamNotification">
+        <div class="notification-content">
+            <div class="notification-text" id="notificationText"></div>
+            <div class="notification-time" id="notificationTime"></div>
+        </div>
+        <div class="notification-character" id="notificationCharacter">
+            <div class="notification-character-emoji" id="notificationCharacterEmoji">🧑‍🔬</div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      class TutorialSystem {
+    constructor() {
+        this.stages = [
+            {
+                id: 1,
+                title: "Приветствие",
+                characterImage: "images/stage1.png",
+                dialogue: "Добро пожаловать в химическую лабораторию! Я помогу тебе освоиться в создании химикатов.",
+                mainOverlay: null,
+                duration: 12000,
+                showMainOverlay: false
+            },
+            {
+                id: 2,
+                title: "Выбор номинала",
+                characterImage: "images/stage2pl3.png",
+                dialogue: "Сначала выбери количество химиката, которое хочешь создать, или спроси у лаборанта. Каждое количество химиката требует уникальной комбинации сырья.",
+                mainOverlay: `
+                    <div class="tutorial-main-content">
+                        <p>1. В центре экрана выбери количество химиката (1, 2, 5, 10 или 20)</p>
+                        <p>2. Каждое кол-во химиката имеет свой секретный рецепт</p>
+                        <p>3. Необходимо перетягивать сырье в колбу зажимая ЛКМ</p>
+                        <p>4. Далее необходимо подбирать подходящее сырье под рецепт выбранного количества химиката</p>
+                    </div>
+                `,
+                duration: 16000,
+                showMainOverlay: true
+            },
+            {
+                id: 3,
+                title: "Индикатор соответствия",
+                characterImage: "images/stage2pl3.png",
+                dialogue: "Следи за индикатором соответствия рецепту. Когда он станет зеленым и заполнится на 100% - можно создать химикат!",
+                mainOverlay: `
+                    <div class="tutorial-main-content">
+                        <p>🟥 Красный - неправильная комбинация (этого сырья нет в рецепте выбранного кол-ва химикатов)</p>
+                        <p>🟧 Оранжевый - частичное совпадение (это сырье есть в рецепте выбранного кол-ва химикатов</p>
+                        <p>🟩 Зеленый 100% - правильная комбинация! (всё сырье в колбе соответствует рецепту)</p>
+                    </div>
+                `,
+                duration: 16000,
+                showMainOverlay: true
+            },
+            {
+                id: 4,
+                title: "Сохранение рецептов",
+                characterImage: "images/stage2pl3.png",
+                dialogue: "Сохраняй успешные рецепты в разделе 'Технологии создания химикатов'. Это позволит быстро повторять удачные комбинации.",
+                mainOverlay: `
+                    <div class="tutorial-main-content">
+                        <h3>Сохранение рецептов</h3>
+                        <p>1. После успешного создания запомни комбинацию и нажми кнопку "+" в правой панели</p>
+                        <p>2. Выберите количество химиката и сырье для рецепта</p>
+                        <p>3. Сохраните рецепт для быстрого повторения</p>
+                        <p>4. В сохраненных рецептах можно применять их одним кликом</p>
+                    </div>
+                `,
+                duration: 16000,
+                showMainOverlay: true
+            },
+            {
+                id: 5,
+                title: "Отправка гирь",
+                characterImage: "images/stage2pl3.png",
+                dialogue: "Созданные химикаты отправляй Лаборанту для создания реагентов. Это принесет очки вашей команде!",
+                mainOverlay: `
+                    <div class="tutorial-main-content">
+                        <h3>Отправка химикатов и взаимодействие</h3>
+                        <p>1. Созданные химикаты отображаются в нижней левой панели</p>
+                        <p>2. Нажмите "Отправить" чтобы отправить химикат Лаборанту</p>
+                    </div>
+                `,
+                duration: 15000,
+                showMainOverlay: true
+            },
+            {
+                id: 6,
+                title: "Удачи!",
+                characterImage: "images/stage1.png",
+                dialogue: "Теперь ты готов к работе! Помни - правильная комбинация сырья это ключ к успеху. Удачи в создании химикатов!",
+                mainOverlay: null,
+                duration: 8000,
+                showMainOverlay: false
+            }
+        ];
+        
+        this.currentStage = 0;
+        this.progressInterval = null;
+        
+        this.overlay = document.getElementById('tutorialOverlay');
+        this.mainOverlay = document.getElementById('tutorialMainOverlay');
+        this.dialogue = document.getElementById('tutorialDialogue');
+        this.dialogueText = document.getElementById('tutorialDialogueText');
+        this.characterImage = document.getElementById('tutorialCharacterImage');
+        this.characterContainer = document.getElementById('tutorialCharacterContainer');
+        this.progressFill = document.getElementById('tutorialProgressFill');
+        this.skipButton = document.getElementById('skipTutorialButton');
+    }
+    
+    startTutorial() {
+        const dontShowAgain = localStorage.getItem('chemicalTutorialDisabled');
+        if (dontShowAgain === 'true') {
+            if (typeof window.onTutorialComplete === 'function') {
+                window.onTutorialComplete();
+            }
+            return;
+        }
+        
+        this.overlay.classList.add('active');
+        this.showStage(0);
+        
+        if (this.skipButton) {
+            this.skipButton.addEventListener('click', () => this.skipTutorial());
+        }
+    }
+    
+    showStage(stageIndex) {
+        if (stageIndex >= this.stages.length) {
+            this.completeTutorial();
+            return;
+        }
+        
+        this.currentStage = stageIndex;
+        const stage = this.stages[stageIndex];
+        
+        this.mainOverlay.classList.remove('active');
+        this.dialogue.classList.remove('active');
+        this.characterContainer.classList.remove('active');
+        
+        if (stage.characterImage) {
+            this.characterImage.src = stage.characterImage;
+            this.characterImage.style.display = 'block';
+            this.characterImage.onerror = () => {
+                console.error('Не удалось загрузить изображение:', stage.characterImage);
+                this.characterImage.style.display = 'none';
+            };
+            this.characterImage.onload = () => {
+                this.characterImage.style.display = 'block';
+            };
+        } else {
+            this.characterImage.style.display = 'none';
+        }
+        
+        this.dialogueText.textContent = stage.dialogue;
+        
+        if (stage.showMainOverlay && stage.mainOverlay) {
+            this.mainOverlay.innerHTML = stage.mainOverlay;
+            setTimeout(() => {
+                this.mainOverlay.classList.add('active');
+            }, 300);
+        } else {
+            this.mainOverlay.innerHTML = '';
+        }
+        
+        setTimeout(() => {
+            this.characterContainer.classList.add('active');
+        }, 100);
+        
+        setTimeout(() => {
+            this.dialogue.classList.add('active');
+        }, 300);
+        
+        this.startProgressBar(stage.duration);
+    }
+    
+    startProgressBar(duration) {
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+        }
+        
+        let startTime = Date.now();
+        this.progressInterval = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration * 100, 100);
+            
+            this.progressFill.style.width = `${progress}%`;
+            
+            if (elapsed >= duration) {
+                clearInterval(this.progressInterval);
+                this.nextStage();
+            }
+        }, 50);
+    }
+    
+    nextStage() {
+        this.showStage(this.currentStage + 1);
+    }
+    
+    completeTutorial() {
+        this.mainOverlay.classList.remove('active');
+        this.dialogue.classList.remove('active');
+        this.characterContainer.classList.remove('active');
+        
+        setTimeout(() => {
+            this.overlay.classList.remove('active');
+            if (typeof window.onTutorialComplete === 'function') {
+                window.onTutorialComplete();
+            }
+        }, 1000);
+    }
+    
+    skipTutorial() {
+        if (this.progressInterval) {
+            clearInterval(this.progressInterval);
+        }
+        this.completeTutorial();
+    }
+}
+
+class ChemicalLabGame {
+    constructor() {
+        this.tutorial = new TutorialSystem();
+        this.socket = null;
+        this.playerId = 'chemist_' + Math.random().toString(36).substr(2, 9);
+        
+        const pathSegments = window.location.pathname.split('/');
+        this.roomId = pathSegments[pathSegments.length - 1] || 'room1';
+        
+        this.chemicals = [];
+        this.materialsInFlask = [];
+        this.recipes = [];
+        
+        this.secretRecipes = {
+            1: [1],
+            2: [4, 5],
+            5: [3, 8, 7],
+            10: [2, 6, 9, 10],
+            20: [1, 2, 3, 4]
+        };
+        
+        this.originalMaterials = [
+            { id: 1, color: '#FF6B6B', name: 'Плазма', inFlask: false },
+            { id: 2, color: '#4ECDC4', name: 'Вода', inFlask: false },
+            { id: 3, color: '#FFD166', name: 'Кислота', inFlask: false },
+            { id: 4, color: '#06D6A0', name: 'Органика', inFlask: false },
+            { id: 5, color: '#118AB2', name: 'Фосфор', inFlask: false },
+            { id: 6, color: '#EF476F', name: 'Электролит', inFlask: false },
+            { id: 7, color: '#073B4C', name: 'Металл', inFlask: false },
+            { id: 8, color: '#7209B7', name: 'Щелочь', inFlask: false },
+            { id: 9, color: '#F3722C', name: 'Полимер', inFlask: false },
+            { id: 10, color: '#90BE6D', name: 'Нейтрализатор', inFlask: false }
+        ];
+        
+        this.materials = JSON.parse(JSON.stringify(this.originalMaterials));
+        
+        this.chemicalOptions = [
+            { value: 1, name: "1 ед." },
+            { value: 2, name: "2 ед." },
+            { value: 5, name: "5 ед." },
+            { value: 10, name: "10 ед." },
+            { value: 20, name: "20 ед." }
+        ];
+        
+        this.castingState = {
+            selectedChemical: null,
+            isCorrectRecipe: false,
+            hasWrongMaterial: false,
+            correctCount: 0
+        };
+        
+        this.recipeState = {
+            isCreating: false,
+            selectedChemical: null,
+            selectedMaterials: []
+        };
+        
+        this.defenseActive = false;
+        
+        // Состояние атак
+        this.attackState = {
+            isUnderAttack: false,
+            currentAttackType: null,
+            attackTimer: null,
+            attackEndTime: null,
+            isMaterialsMixed: false,
+            mixedState: null
+        };
+        
+        window.onTutorialComplete = () => {
+            this.init();
+        };
+        
+        this.tutorial.startTutorial();
+    }
+    
+    init() {
+        this.connectToServer();
+        this.setupEventListeners();
+        this.populateMaterialList();
+        this.populateChemicalOptions();
+        this.loadRecipes();
+        this.updateDisplay();
+        this.setupDragAndDrop();
+        this.setupHintButton();
+        this.updateRecipeButtonState();
+    }
+    
+    setupHintButton() {
+        const hintButton = document.getElementById('hintButton');
+        const hintModal = document.getElementById('hintModal');
+        const hintCloseButton = document.getElementById('hintCloseButton');
+        
+        hintButton.addEventListener('click', () => {
+            hintModal.classList.add('active');
+        });
+        
+        hintCloseButton.addEventListener('click', () => {
+            hintModal.classList.remove('active');
+        });
+        
+        hintModal.addEventListener('click', (e) => {
+            if (e.target === hintModal) {
+                hintModal.classList.remove('active');
+            }
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && hintModal.classList.contains('active')) {
+                hintModal.classList.remove('active');
+            }
+        });
+    }
+    
+    connectToServer() {
+        this.socket = io();
+        
+        this.socket.on('connect', () => {
+            this.socket.emit('register-player', {
+                playerId: this.playerId,
+                playerType: 'weightGatherer',
+                playerName: 'Химик',
+                roomId: this.roomId
+            });
+        });
+        
+        this.socket.on('disconnect', () => {
+        });
+        
+        this.socket.on('game-state', (gameState) => {
+            console.log('Получено состояние игры:', gameState);
+        });
+        
+        this.socket.on('team-reward', (reward) => {
+            this.showTeamNotification(reward.message, '🎉');
+        });
+        
+        this.socket.on('defense-activated', (data) => {
+            this.defenseActive = true;
+            this.showTeamNotification(`🛡️ Защитный реагент активирован!`, '🛡️');
+        });
+        
+        this.socket.on('defense-destroyed', (data) => {
+            this.defenseActive = false;
+            this.showTeamNotification(`🛡️ Защита команды снята`, '❌');
+        });
+        
+        // ИСПРАВЛЕНИЕ: Добавлен обработчик defense-used
+        this.socket.on('defense-used', (data) => {
+            this.defenseActive = false;
+            this.showTeamNotification(`🛡️ Защита команды отразила атаку от команды ${data.attackerRoom}!`, '🛡️');
+        });
+        
+        // Обработка атак
+        this.socket.on('attack-received', (data) => {
+            this.handleAttack(data);
+        });
+        
+        this.socket.on('attack-blocked', (data) => {
+            this.showTeamNotification(`🛡️ Защита команды отразила атаку "${data.potionName}"!`, '🛡️');
+        });
+        
+        this.socket.on('defense-used', (data) => {
+            this.showTeamNotification(`🛡️ Защита команды отразила атаку от команды ${data.attackerRoom}!`, '🛡️');
+        });
+    }
+    
+    setupEventListeners() {
+        document.getElementById('castWeightButton').addEventListener('click', () => this.createChemical());
+        document.getElementById('emptyCrucibleButton').addEventListener('click', () => this.emptyFlask());
+        document.getElementById('addRecipeButton').addEventListener('click', () => this.openRecipeModal());
+        document.getElementById('closeRecipeModal').addEventListener('click', () => this.closeRecipeModal());
+        document.getElementById('cancelRecipeButton').addEventListener('click', () => this.closeRecipeModal());
+        document.getElementById('saveRecipeButton').addEventListener('click', () => this.saveRecipe());
+        
+        document.getElementById('recipeModal').addEventListener('click', (e) => {
+            if (e.target.id === 'recipeModal') {
+                this.closeRecipeModal();
+            }
+        });
+    }
+    
+    setupDragAndDrop() {
+        const crucible = document.getElementById('crucible');
+        
+        crucible.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            crucible.style.borderColor = '#10b981';
+        });
+        
+        crucible.addEventListener('dragleave', () => {
+            crucible.style.borderColor = '#8b4513';
+        });
+        
+        crucible.addEventListener('drop', (e) => {
+            e.preventDefault();
+            crucible.style.borderColor = '#8b4513';
+            
+            const materialId = parseInt(e.dataTransfer.getData('text/plain'));
+            this.addMaterialToFlask(materialId);
+        });
+    }
+    
+    populateMaterialList() {
+        const oreList = document.getElementById('oreList');
+        oreList.innerHTML = '';
+        
+        this.materials.forEach(material => {
+            if (material.inFlask) return;
+            
+            const materialElement = document.createElement('div');
+            materialElement.className = 'ore-item';
+            materialElement.dataset.id = material.id;
+            
+            materialElement.innerHTML = `
+                <div class="ore-color" style="background-color: ${material.color}"></div>
+                <div class="ore-name">${material.name}</div>
+            `;
+            
+            materialElement.setAttribute('draggable', 'true');
+            materialElement.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', material.id);
+                materialElement.classList.add('dragging');
+            });
+            
+            materialElement.addEventListener('dragend', () => {
+                materialElement.classList.remove('dragging');
+            });
+            
+            oreList.appendChild(materialElement);
+        });
+    }
+    
+    populateChemicalOptions() {
+        const weightOptions = document.getElementById('weightOptions');
+        weightOptions.innerHTML = '';
+        
+        this.chemicalOptions.forEach(chemical => {
+            const option = document.createElement('div');
+            option.className = 'weight-option';
+            option.dataset.value = chemical.value;
+            
+            option.innerHTML = `
+                <div class="weight-name">${chemical.name}</div>
+            `;
+            
+            option.addEventListener('click', () => {
+                this.selectChemical(chemical.value, chemical.name);
+            });
+            
+            weightOptions.appendChild(option);
+        });
+    }
+    
+    selectChemical(value, name) {
+        document.querySelectorAll('.weight-option').forEach(option => {
+            option.classList.remove('selected');
+        });
+        
+        const selectedOption = document.querySelector(`.weight-option[data-value="${value}"]`);
+        selectedOption.classList.add('selected');
+        
+        this.castingState.selectedChemical = { value, name };
+        this.emptyFlask();
+        this.updateMixingIndicator();
+    }
+    
+    addMaterialToFlask(materialId) {
+        if (!this.castingState.selectedChemical) {
+            this.showTeamNotification('Сначала выберите количество химиката!', '⚠️');
+            return;
+        }
+        
+        const material = this.materials.find(m => m.id === materialId && !m.inFlask);
+        if (!material) return;
+        
+        if (this.materialsInFlask.length >= 4) {
+            this.showTeamNotification('Колба переполнена! Максимум 4 сырья.', '⚠️');
+            return;
+        }
+        
+        material.inFlask = true;
+        this.materialsInFlask.push({...material});
+        
+        this.updateFlaskFill();
+        this.updateMaterialList();
+        this.updateMixingIndicator();
+    }
+    
+    updateFlaskFill() {
+        const crucibleFill = document.getElementById('crucibleFill');
+        crucibleFill.innerHTML = '';
+        
+        const layerCount = this.materialsInFlask.length;
+        const layerHeight = layerCount > 0 ? 100 / layerCount : 0;
+        
+        this.materialsInFlask.forEach(material => {
+            const materialLayer = document.createElement('div');
+            materialLayer.className = 'metal-layer';
+            materialLayer.style.backgroundColor = material.color;
+            
+            materialLayer.innerHTML = `
+                <div class="metal-layer-info">${material.name}</div>
+            `;
+            
+            materialLayer.addEventListener('click', () => {
+                this.removeMaterialFromFlask(material.id);
+            });
+            
+            crucibleFill.appendChild(materialLayer);
+        });
+        
+        crucibleFill.style.height = `${layerHeight * layerCount}%`;
+    }
+    
+    removeMaterialFromFlask(materialId) {
+        const materialIndex = this.materialsInFlask.findIndex(m => m.id === materialId);
+        if (materialIndex === -1) return;
+        
+        const removedMaterial = this.materialsInFlask.splice(materialIndex, 1)[0];
+        
+        const material = this.materials.find(m => m.id === materialId);
+        if (material) material.inFlask = false;
+        
+        this.updateFlaskFill();
+        this.updateMaterialList();
+        this.updateMixingIndicator();
+    }
+    
+    emptyFlask() {
+        this.materialsInFlask.forEach(materialInFlask => {
+            const material = this.materials.find(m => m.id === materialInFlask.id);
+            if (material) material.inFlask = false;
+        });
+        
+        this.materialsInFlask = [];
+        this.castingState.hasWrongMaterial = false;
+        this.castingState.correctCount = 0;
+        this.updateFlaskFill();
+        this.updateMaterialList();
+        this.updateMixingIndicator();
+    }
+    
+    updateMaterialList() {
+        const oreList = document.getElementById('oreList');
+        oreList.innerHTML = '';
+        
+        this.materials.forEach(material => {
+            const materialElement = document.createElement('div');
+            materialElement.className = `ore-item ${material.inFlask ? 'used' : ''}`;
+            materialElement.dataset.id = material.id;
+            
+            materialElement.innerHTML = `
+                <div class="ore-color" style="background-color: ${material.color}"></div>
+                <div class="ore-name">${material.name}</div>
+            `;
+            
+            if (!material.inFlask) {
+                materialElement.setAttribute('draggable', 'true');
+                materialElement.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', material.id);
+                    materialElement.classList.add('dragging');
+                });
+                
+                materialElement.addEventListener('dragend', () => {
+                    materialElement.classList.remove('dragging');
+                });
+            }
+            
+            oreList.appendChild(materialElement);
+        });
+    }
+    
+    updateMixingIndicator() {
+        const indicatorStatus = document.getElementById('indicatorStatus');
+        const indicatorText = document.getElementById('indicatorText');
+        const castButton = document.getElementById('castWeightButton');
+        const mixingIndicator = document.getElementById('mixingIndicator');
+        
+        mixingIndicator.classList.remove('error');
+        
+        if (!this.castingState.selectedChemical) {
+            indicatorStatus.style.width = '0%';
+            indicatorStatus.style.backgroundColor = '#ef4444';
+            indicatorText.textContent = 'Выберите количество химиката';
+            indicatorText.className = 'indicator-text red';
+            castButton.disabled = true;
+            this.castingState.isCorrectRecipe = false;
+            return;
+        }
+        
+        if (this.materialsInFlask.length === 0) {
+            indicatorStatus.style.width = '0%';
+            indicatorStatus.style.backgroundColor = '#ef4444';
+            indicatorText.textContent = 'Добавьте сырье в колбу';
+            indicatorText.className = 'indicator-text red';
+            castButton.disabled = true;
+            this.castingState.isCorrectRecipe = false;
+            return;
+        }
+        
+        const selectedChemicalValue = this.castingState.selectedChemical.value;
+        const secretRecipe = this.secretRecipes[selectedChemicalValue];
+        const currentMaterials = this.materialsInFlask.map(material => material.id);
+        
+        let correctCount = 0;
+        let hasWrongMaterial = false;
+        
+        currentMaterials.forEach(materialId => {
+            if (secretRecipe.includes(materialId)) {
+                correctCount++;
+            } else {
+                hasWrongMaterial = true;
+            }
+        });
+        
+        this.castingState.correctCount = correctCount;
+        this.castingState.hasWrongMaterial = hasWrongMaterial;
+        
+        const totalRecipeItems = secretRecipe.length;
+        const percentage = (correctCount / totalRecipeItems) * 100;
+        
+        indicatorStatus.style.width = `${percentage}%`;
+        
+        if (hasWrongMaterial) {
+            indicatorStatus.style.backgroundColor = '#ef4444';
+            
+            if (correctCount === 0) {
+                mixingIndicator.classList.add('error');
+                indicatorText.textContent = '❌ Это сырье не подходит для рецепта!';
+                indicatorText.className = 'indicator-text red';
+            } else {
+                indicatorText.textContent = `⚠️ Есть неправильное сырье! Правильных: ${correctCount} из ${totalRecipeItems}`;
+                indicatorText.className = 'indicator-text red';
+            }
+            
+            castButton.disabled = true;
+            this.castingState.isCorrectRecipe = false;
+        } else {
+            if (correctCount === totalRecipeItems) {
+                indicatorStatus.style.backgroundColor = '#10b981';
+                indicatorText.textContent = '✅ Правильная смесь! Можно создать химикат';
+                indicatorText.className = 'indicator-text green';
+                castButton.disabled = false;
+                this.castingState.isCorrectRecipe = true;
+            } else if (correctCount > 0) {
+                indicatorStatus.style.backgroundColor = '#fbbf24';
+                indicatorText.textContent = `⚠️ Правильных: ${correctCount} из ${totalRecipeItems}. Добавьте еще сырья из рецепта`;
+                indicatorText.className = 'indicator-text orange';
+                castButton.disabled = true;
+                this.castingState.isCorrectRecipe = false;
+            } else {
+                indicatorStatus.style.backgroundColor = '#ef4444';
+                indicatorText.textContent = '❌ Добавьте правильное сырье из рецепта';
+                indicatorText.className = 'indicator-text red';
+                castButton.disabled = true;
+                this.castingState.isCorrectRecipe = false;
+            }
+        }
+    }
+    
+    arraysEqual(arr1, arr2) {
+        if (arr1.length !== arr2.length) return false;
+        for (let i = 0; i < arr1.length; i++) {
+            if (arr1[i] !== arr2[i]) return false;
+        }
+        return true;
+    }
+    
+    createChemical() {
+        if (!this.castingState.selectedChemical || !this.castingState.isCorrectRecipe) return;
+        
+        const chemical = {
+            id: Date.now() + Math.random(),
+            value: this.castingState.selectedChemical.value,
+            name: this.castingState.selectedChemical.name
+        };
+        
+        // Ограничение на 5 химикатов
+        if (this.chemicals.length >= 5) {
+            // Удаляем самый старый химикат (первый в массиве)
+            this.chemicals.shift();
+        }
+        
+        this.chemicals.push(chemical);
+        this.updateChemicalsList();
+        this.updateDisplay();
+        
+        this.showTeamNotification(`Создан химикат ${this.castingState.selectedChemical.name}!`, '🧪');
+        
+        this.emptyFlask();
+    }
+    
+    sendChemicalToLab(chemicalId) {
+        const chemicalIndex = this.chemicals.findIndex(c => c.id === chemicalId);
+        if (chemicalIndex === -1) return;
+        
+        const chemical = this.chemicals[chemicalIndex];
+        
+        this.socket.emit('send-weights', {
+            weights: [chemical],
+            playerId: this.playerId,
+            roomId: this.roomId
+        });
+        
+        this.chemicals.splice(chemicalIndex, 1);
+        this.updateChemicalsList();
+        this.updateDisplay();
+        
+        this.showTeamNotification(`Химикат ${chemical.name} отправлен Лаборанту!`, '🚀');
+    }
+    
+    updateChemicalsList() {
+        const resourcesList = document.getElementById('resourcesList');
+        
+        if (this.chemicals.length === 0) {
+            resourcesList.innerHTML = '<div class="empty-message">Химикаты еще не созданы</div>';
+        } else {
+            resourcesList.innerHTML = '';
+            
+            this.chemicals.forEach(chemical => {
+                const resourceItem = document.createElement('div');
+                resourceItem.className = 'resource-item';
+                
+                resourceItem.innerHTML = `
+                    <div class="resource-info">
+                        <div class="resource-name">${chemical.name}</div>
+                    </div>
+                    <button class="control-button send-button" data-id="${chemical.id}">Отправить</button>
+                `;
+                
+                resourcesList.appendChild(resourceItem);
+                
+                const sendButton = resourceItem.querySelector('.send-button');
+                sendButton.addEventListener('click', () => {
+                    this.sendChemicalToLab(chemical.id);
+                });
+            });
+        }
+    }
+    
+    updateDisplay() {
+    }
+    
+    showTeamNotification(message, emoji = '🧑‍🔬') {
+        const notification = document.getElementById('teamNotification');
+        const notificationText = document.getElementById('notificationText');
+        const notificationTime = document.getElementById('notificationTime');
+        const notificationCharacterEmoji = document.getElementById('notificationCharacterEmoji');
+        
+        if (!notification) return;
+        
+        notificationCharacterEmoji.textContent = emoji;
+        
+        notificationText.textContent = message;
+        
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        notificationTime.textContent = `Сейчас: ${timeString}`;
+        
+        notification.classList.add('show');
+        
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 5000);
+    }
+    
+    openRecipeModal() {
+        // Проверка на максимальное количество рецептов
+        if (this.recipes.length >= 5) {
+            this.showTeamNotification('Достигнут лимит рецептов! Удалите старый рецепт, чтобы создать новый.', '⚠️');
+            return;
+        }
+        
+        const modal = document.getElementById('recipeModal');
+        modal.classList.add('active');
+        
+        this.recipeState = {
+            isCreating: true,
+                    selectedChemical: null,
+                    selectedMaterials: []
+                };
+                
+                this.populateRecipeMaterialsList();
+                this.populateModalChemicalOptions();
+                this.updateSaveRecipeButton();
+            }
+            
+            closeRecipeModal() {
+                const modal = document.getElementById('recipeModal');
+                modal.classList.remove('active');
+                this.recipeState.isCreating = false;
+            }
+            
+            populateModalChemicalOptions() {
+                const modalWeightOptions = document.getElementById('modalWeightOptions');
+                modalWeightOptions.innerHTML = '';
+                
+                this.chemicalOptions.forEach(chemical => {
+                    const option = document.createElement('div');
+                    option.className = 'modal-weight-option';
+                    option.dataset.value = chemical.value;
+                    
+                    option.innerHTML = chemical.name;
+                    
+                    option.addEventListener('click', () => {
+                        document.querySelectorAll('.modal-weight-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        
+                        option.classList.add('selected');
+                        
+                        this.recipeState.selectedChemical = {
+                            value: chemical.value,
+                            name: chemical.name
+                        };
+                        
+                        this.updateSaveRecipeButton();
+                    });
+                    
+                    modalWeightOptions.appendChild(option);
+                });
+            }
+            
+            populateRecipeMaterialsList() {
+                const recipeMetalsList = document.getElementById('recipeMetalsList');
+                recipeMetalsList.innerHTML = '';
+                
+                this.materials.forEach(material => {
+                    const materialSelector = document.createElement('div');
+                    materialSelector.className = 'recipe-metal-selector';
+                    materialSelector.dataset.id = material.id;
+                    
+                    materialSelector.innerHTML = `
+                        <div style="width: 20px; height: 20px; border-radius: 50%; background-color: ${material.color}"></div>
+                        <div>${material.name}</div>
+                    `;
+                    
+                    materialSelector.addEventListener('click', () => {
+                        this.toggleMaterialInRecipe(material.id);
+                    });
+                    
+                    recipeMetalsList.appendChild(materialSelector);
+                });
+            }
+            
+            toggleMaterialInRecipe(materialId) {
+                const material = this.materials.find(m => m.id === materialId);
+                if (!material) return;
+                
+                const index = this.recipeState.selectedMaterials.findIndex(m => m.id === materialId);
+                
+                if (index === -1) {
+                    if (this.recipeState.selectedMaterials.length >= 4) {
+                        this.showTeamNotification('Максимум 4 сырья в рецепте!', '⚠️');
+                        return;
+                    }
+                    
+                    this.recipeState.selectedMaterials.push({...material});
+                } else {
+                    this.recipeState.selectedMaterials.splice(index, 1);
+                }
+                
+                this.updateSelectedMaterialsDisplay();
+                this.updateSaveRecipeButton();
+            }
+            
+            updateSelectedMaterialsDisplay() {
+                const selectedMetals = document.getElementById('selectedMetals');
+                const selectedCount = document.getElementById('selectedCount');
+                
+                selectedCount.textContent = this.recipeState.selectedMaterials.length;
+                
+                selectedMetals.innerHTML = '';
+                
+                if (this.recipeState.selectedMaterials.length === 0) {
+                    selectedMetals.innerHTML = '<div class="empty-message">Кликайте на сырье, чтобы добавить в рецепт</div>';
+                    return;
+                }
+                
+                this.recipeState.selectedMaterials.forEach(material => {
+                    const materialItem = document.createElement('div');
+                    materialItem.className = 'selected-metal-item';
+                    
+                    materialItem.innerHTML = `
+                        <div class="selected-metal-color" style="background-color: ${material.color}"></div>
+                        <span>${material.name}</span>
+                        <button class="remove-metal-button" data-id="${material.id}">×</button>
+                    `;
+                    
+                    selectedMetals.appendChild(materialItem);
+                    
+                    const removeButton = materialItem.querySelector('.remove-metal-button');
+                    removeButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleMaterialInRecipe(material.id);
+                    });
+                });
+            }
+            
+            updateSaveRecipeButton() {
+                const saveButton = document.getElementById('saveRecipeButton');
+                const materialCount = this.recipeState.selectedMaterials.length;
+                
+                const canSave = this.recipeState.selectedChemical !== null && 
+                               materialCount >= 1 && materialCount <= 4;
+                
+                saveButton.disabled = !canSave;
+            }
+            
+            saveRecipe() {
+                // Проверка на максимальное количество рецептов
+                if (this.recipes.length >= 5) {
+                    this.showTeamNotification('Достигнут лимит рецептов! Удалите старый рецепт, чтобы создать новый.', '⚠️');
+                    this.closeRecipeModal();
+                    return;
+                }
+                
+                if (!this.recipeState.selectedChemical || 
+                    this.recipeState.selectedMaterials.length < 1 || 
+                    this.recipeState.selectedMaterials.length > 4) {
+                    return;
+                }
+                
+                const recipeName = `Рецепт для ${this.recipeState.selectedChemical.name}`;
+                
+                const recipe = {
+                    id: Date.now() + Math.random(),
+                    name: recipeName,
+                    chemical: this.recipeState.selectedChemical,
+                    materials: [...this.recipeState.selectedMaterials],
+                    createdAt: new Date().toISOString()
+                };
+                
+                this.recipes.push(recipe);
+                this.saveRecipes();
+                this.updateRecipesList();
+                this.updateRecipeButtonState();
+                
+                this.closeRecipeModal();
+                this.showTeamNotification(`Рецепт "${recipeName}" сохранен!`, '📝');
+            }
+            
+            updateRecipesList() {
+                const technologiesList = document.getElementById('technologiesList');
+                
+                if (this.recipes.length === 0) {
+                    technologiesList.innerHTML = '<div class="empty-message">Нет сохраненных рецептов</div>';
+                    return;
+                }
+                
+                technologiesList.innerHTML = '';
+                
+                this.recipes.forEach(recipe => {
+                    const recipeCard = document.createElement('div');
+                    recipeCard.className = 'recipe-card';
+                    
+                    const materialsHtml = recipe.materials.map(material => `
+                        <div class="recipe-metal-item">
+                            <div class="recipe-metal-color" style="background-color: ${material.color}"></div>
+                            <span>${material.name}</span>
+                        </div>
+                    `).join('');
+                    
+                    recipeCard.innerHTML = `
+                        <div class="recipe-header">
+                            <div class="recipe-name">${recipe.name}</div>
+                            <button class="delete-recipe-button" data-id="${recipe.id}">×</button>
+                        </div>
+                        <div class="recipe-metals">${materialsHtml}</div>
+                        <button class="apply-recipe-button" data-id="${recipe.id}">Применить рецепт</button>
+                    `;
+                    
+                    technologiesList.appendChild(recipeCard);
+                    
+                    const deleteButton = recipeCard.querySelector('.delete-recipe-button');
+                    deleteButton.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.deleteRecipe(recipe.id);
+                    });
+                    
+                    const applyButton = recipeCard.querySelector('.apply-recipe-button');
+                    applyButton.addEventListener('click', () => {
+                        this.applyRecipe(recipe.id);
+                    });
+                });
+            }
+            
+            updateRecipeButtonState() {
+                const addRecipeButton = document.getElementById('addRecipeButton');
+                const recipeLimitIndicator = document.getElementById('recipeLimitIndicator');
+                
+                if (this.recipes.length >= 5) {
+                    addRecipeButton.disabled = true;
+                    addRecipeButton.title = 'Достигнут лимит в 5 рецептов!';
+                    recipeLimitIndicator.innerHTML = `Лимит достигнут: ${this.recipes.length}/5 рецептов`;
+                } else {
+                    addRecipeButton.disabled = false;
+                    addRecipeButton.title = 'Максимум 5 рецептов';
+                    recipeLimitIndicator.innerHTML = `Доступно максимум 5 рецептов`;
+                }
+            }
+            
+            deleteRecipe(recipeId) {
+                const index = this.recipes.findIndex(r => r.id === recipeId);
+                if (index === -1) return;
+                
+                this.recipes.splice(index, 1);
+                this.saveRecipes();
+                this.updateRecipesList();
+                this.updateRecipeButtonState();
+                
+                this.showTeamNotification('Рецепт удален', '🗑️');
+            }
+            
+            applyRecipe(recipeId) {
+                const recipe = this.recipes.find(r => r.id === recipeId);
+                if (!recipe) return;
+                
+                this.selectChemical(recipe.chemical.value, recipe.chemical.name);
+                this.emptyFlask();
+                
+                recipe.materials.forEach(material => {
+                    const mat = this.materials.find(m => m.id === material.id);
+                    if (mat && !mat.inFlask) {
+                        this.addMaterialToFlask(material.id);
+                    }
+                });
+                
+                this.showTeamNotification(`Рецепт "${recipe.name}" применен!`, '📋');
+            }
+            
+            saveRecipes() {
+                try {
+                    const recipesToSave = this.recipes.map(recipe => ({
+                        ...recipe,
+                        materials: recipe.materials.map(material => ({
+                            id: material.id,
+                            name: material.name,
+                            color: material.color
+                        }))
+                    }));
+                    
+                    localStorage.setItem(`chemicalRecipes_${this.playerId}`, JSON.stringify(recipesToSave));
+                } catch (e) {
+                    console.error('Ошибка при сохранении рецептов:', e);
+                }
+            }
+            
+            loadRecipes() {
+                try {
+                    const savedRecipes = localStorage.getItem(`chemicalRecipes_${this.playerId}`);
+                    if (savedRecipes) {
+                        this.recipes = JSON.parse(savedRecipes);
+                        this.updateRecipesList();
+                        this.updateRecipeButtonState();
+                    }
+                } catch (e) {
+                    console.error('Ошибка при загрузке рецептов:', e);
+                }
+            }
+            
+            // Обработка атак
+            handleAttack(data) {
+                const potionType = data.potionType;
+                
+                if (this.defenseActive) {
+                    this.showTeamNotification(`🛡️ Защита отразила атаку "${data.potionName}"!`, '🛡️');
+                    return;
+                }
+                
+                this.attackState.isUnderAttack = true;
+                this.attackState.currentAttackType = potionType;
+                this.attackState.attackEndTime = Date.now() + 60000; // 1 минута
+                
+                switch(potionType) {
+                    case 'attack1': // Деструктор Молекулярных Связей
+                        this.applyMaterialChaos();
+                        break;
+                    case 'attack2': // Изотопный Дестабилизатор
+                        this.applyRecipeDestruction();
+                        break;
+                    default:
+                        console.log('Неизвестный тип атаки:', potionType);
+                        return;
+                }
+                
+                let message = '';
+                switch(potionType) {
+                    case 'attack1':
+                        message = '🌀 Атака "Хаос сырья"! Цвета и названия сырья перемешаны на 1 минуту!';
+                        break;
+                    case 'attack2':
+                        message = '💥 Атака "Разрушение рецептов"! Все сохраненные рецепты уничтожены!';
+                        break;
+                }
+                this.showTeamNotification(message, '⚔️');
+                
+                this.startAttackTimer();
+            }
+            
+            applyMaterialChaos() {
+                // Сохраняем текущее состояние для восстановления
+                this.attackState.mixedState = JSON.parse(JSON.stringify(this.materials));
+                this.attackState.isMaterialsMixed = true;
+                
+                // Перемешиваем цвета и названия
+                const colors = this.materials.map(m => m.color);
+                const names = this.materials.map(m => m.name);
+                
+                // Перемешиваем массивы
+                this.shuffleArray(colors);
+                this.shuffleArray(names);
+                
+                // Применяем перемешанные цвета и названия
+                this.materials.forEach((material, index) => {
+                    material.color = colors[index];
+                    material.name = names[index];
+                });
+                
+                // Обновляем материалы в колбе
+                if (this.materialsInFlask.length > 0) {
+                    this.materialsInFlask.forEach(materialInFlask => {
+                        const updatedMaterial = this.materials.find(m => m.id === materialInFlask.id);
+                        if (updatedMaterial) {
+                            materialInFlask.color = updatedMaterial.color;
+                            materialInFlask.name = updatedMaterial.name;
+                        }
+                    });
+                }
+                
+                this.updateMaterialList();
+                this.updateFlaskFill();
+                this.updateMixingIndicator();
+            }
+            
+            applyRecipeDestruction() {
+                // Удаляем все сохраненные рецепты
+                this.recipes = [];
+                this.saveRecipes();
+                this.updateRecipesList();
+                this.updateRecipeButtonState();
+            }
+            
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+            
+            startAttackTimer() {
+                if (this.attackState.attackTimer) {
+                    clearInterval(this.attackState.attackTimer);
+                }
+                
+                this.attackState.attackTimer = setInterval(() => {
+                    const now = Date.now();
+                    const remaining = this.attackState.attackEndTime - now;
+                    
+                    if (remaining <= 0) {
+                        this.endAttack();
+                        return;
+                    }
+                    
+                }, 1000);
+            }
+            
+            endAttack() {
+                if (this.attackState.attackTimer) {
+                    clearInterval(this.attackState.attackTimer);
+                    this.attackState.attackTimer = null;
+                }
+                
+                this.attackState.isUnderAttack = false;
+                this.attackState.currentAttackType = null;
+                
+                // Восстанавливаем материалы если они были перемешаны
+                if (this.attackState.isMaterialsMixed && this.attackState.mixedState) {
+                    this.materials = JSON.parse(JSON.stringify(this.attackState.mixedState));
+                    this.attackState.isMaterialsMixed = false;
+                    this.attackState.mixedState = null;
+                    
+                    // Обновляем материалы в колбе
+                    if (this.materialsInFlask.length > 0) {
+                        this.materialsInFlask.forEach(materialInFlask => {
+                            const originalMaterial = this.materials.find(m => m.id === materialInFlask.id);
+                            if (originalMaterial) {
+                                materialInFlask.color = originalMaterial.color;
+                                materialInFlask.name = originalMaterial.name;
+                            }
+                        });
+                    }
+                    
+                    this.updateMaterialList();
+                    this.updateFlaskFill();
+                    this.updateMixingIndicator();
+                    
+                    this.showTeamNotification('✅ Эффект атаки закончился! Сырье восстановлено.', '✅');
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChemicalLabGame();
+        });
+    </script>
+</body>
+</html>

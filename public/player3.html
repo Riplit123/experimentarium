@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лаборант - Экспериментариум</title>
+    <link rel="stylesheet" href="/css/player3.css">
+    <base href="/">
+    <style>
+        /* Временные стили для оверлеев, пока не загрузится основной CSS */
+        .potions-overlay, .potion-info-overlay, .attack-target-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9998;
+        }
+        
+        .potions-overlay.active, .potion-info-overlay.active, .attack-target-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .potions-backdrop, .potion-info-backdrop, .attack-target-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+        }
+        
+        .potions-modal, .potion-info-modal, .attack-target-modal {
+            position: relative;
+            background: #5d4037;
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 9999;
+            max-width: 800px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        /* Временные стили для уведомлений */
+        .temp-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 1000;
+            max-width: 300px;
+            animation: fadeInOut 3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Оверлей обучения -->
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-backdrop"></div>
+        <div class="tutorial-main-overlay" id="tutorialMainOverlay"></div>
+        <div class="tutorial-character-container" id="tutorialCharacterContainer">
+            <div class="tutorial-dialogue-overlay" id="tutorialDialogue">
+                <p id="tutorialDialogueText">Добро пожаловать в игру!</p>
+                <div class="tutorial-progress-bar">
+                    <div class="tutorial-progress-fill" id="tutorialProgressFill"></div>
+                </div>
+                <button class="skip-tutorial-button" id="skipTutorialButton">Пропустить обучение</button>
+            </div>
+            <img id="tutorialCharacterImage" src="" alt="Персонаж обучения" class="tutorial-character-image">
+        </div>
+    </div>
+
+    <!-- Оверлей выбора зелий -->
+    <div class="potions-overlay" id="potionsOverlay">
+        <div class="potions-backdrop"></div>
+        <div class="potions-modal">
+            <div class="potions-modal-header">
+                <h3 id="potionsModalTitle">Выберите реактив</h3>
+                <button class="close-button" id="closePotionsModal">×</button>
+            </div>
+            <div class="potions-modal-content" id="potionsModalContent">
+                <!-- Список зелий будет добавляться динамически -->
+            </div>
+        </div>
+    </div>
+
+<!-- Оверлей смены игроков -->
+<div class="player-change-overlay" id="playerChangeOverlay">
+    <div class="player-change-backdrop"></div>
+    <div class="player-change-modal">
+        <div class="player-change-header">
+            <h2 id="playerChangeTitle">СМЕНА ИГРОКОВ</h2>
+        </div>
+        <div class="player-change-content">
+            <div class="player-change-icon">🔄</div>
+            <p class="player-change-message">Реагент успешно создан! Настало время передать ход следующему игроку.</p>
+            <p class="player-change-instruction">Пожалуйста, передайте управление следующему игроку в соответствии с игровой механикой.</p>
+            <div class="cooldown-timer-display" id="playerChangeTimer" style="display: none;">
+                Автоматическое закрытие через: <span id="changeTimerCount">5</span> сек
+            </div>
+        </div>
+        <div class="player-change-actions">
+            <button class="button confirm-change-button" id="confirmChangeButton">Подтвердить смену</button>
+        </div>
+    </div>
+</div>
+
+    <!-- Оверлей информации о зелье -->
+    <div class="potion-info-overlay" id="potionInfoOverlay">
+        <div class="potion-info-backdrop"></div>
+        <div class="potion-info-modal">
+            <div class="potion-info-header">
+                <h3 id="potionInfoTitle">Информация о реактиве</h3>
+                <button class="close-button" id="closePotionInfoModal">×</button>
+            </div>
+            <div class="potion-info-content" id="potionInfoContent">
+                <!-- Информация о зелье будет добавляться динамически -->
+            </div>
+            <div class="potion-info-actions">
+                <button class="button use-info-button" id="usePotionInfoButton">Использовать реактив</button>
+                <button class="button close-info-button" id="closePotionInfoButton">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Оверлей выбора цели атаки -->
+    <div class="attack-target-overlay" id="attackTargetOverlay">
+        <div class="attack-target-backdrop"></div>
+        <div class="attack-target-modal">
+            <div class="attack-target-header">
+                <h3 id="attackTargetTitle">Выберите цель атаки</h3>
+                <button class="close-button" id="closeAttackTargetModal">×</button>
+            </div>
+            <div class="attack-target-content" id="attackTargetContent">
+                <div class="attack-description" id="attackDescription"></div>
+                <div class="target-selection">
+                    <h4>Выберите команду для атаки:</h4>
+                    <div class="teams-grid" id="teamsGrid">
+                        <!-- Команды будут добавляться динамически -->
+                    </div>
+                </div>
+                <div class="ingredient-selection" id="ingredientSelection" style="display: none;">
+                    <h4>Выберите компонент для блокировки:</h4>
+                    <div class="ingredients-choice-grid" id="ingredientsChoiceGrid">
+                        <!-- Ингредиенты для блокировки будут добавляться динамически -->
+                    </div>
+                </div>
+            </div>
+            <div class="attack-target-actions">
+                <button class="button attack-confirm-button" id="confirmAttackButton" disabled>Подтвердить атаку</button>
+                <button class="button attack-cancel-button" id="cancelAttackButton">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Лаборант - Создание Реагентов</h1>
+            <p>Создавайте реагенты, используя ресурсы от команды!</p>
+        </header>
+
+        <div class="player-info">
+    <div class="connection-status">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="connectionStatus">Подключение к серверу...</span>
+    </div>
+    <div class="player-stats">
+        Создано реагентов: <span id="potionsCreated">0</span>
+    </div>
+        </div>
+
+        <div class="main-game-area">
+            <!-- Колонка 1: Упрощенный выбор зелий -->
+            <div class="column recipes-column">
+    <div class="recipes-container">
+        <h2>Создание реагентов</h2>
+        
+        <div class="potion-category-buttons">
+            <button class="potion-category-button quick-reagent-button active" id="quickReagentButton">
+                <div class="button-content">
+                    <span class="button-icon">⚗️</span>
+                    <span class="button-text">Создать быстрый реагент</span>
+                </div>
+                <div class="button-progress" id="quickReagentProgress">0/5</div>
+            </button>
+            
+            <button class="potion-category-button attack-defense-button disabled" id="attackDefenseButton" disabled>
+                <div class="button-content">
+                    <span class="button-icon">⚔️</span>
+                    <span class="button-text">Реагенты атаки и защиты</span>
+                    <span class="lock-icon">🔒</span>
+                </div>
+                <div class="button-progress">0/5</div>
+                <div class="unlock-progress-bar" id="unlockProgressBar">
+                    <div class="unlock-progress-fill" id="unlockProgressFill"></div>
+                </div>
+            </button>
+        </div>
+        
+        <div class="selected-recipe-display" id="selectedRecipeDisplay">
+            <!-- Контент будет добавляться динамически -->
+        </div>
+        
+        <div class="inventory-simple-container">
+            <button class="inventory-button" id="attackInventoryButton">
+                <span class="inventory-icon">🎒</span>
+                <span class="inventory-text">Инвентарь реагентов атаки</span>
+                <span class="inventory-count" id="attackInventoryCount">0</span>
+            </button>
+            <button class="inventory-button" id="defenseInventoryButton">
+                <span class="inventory-icon">🛡️</span>
+                <span class="inventory-text">Активная защита</span>
+                <span class="inventory-count" id="defenseInventoryCount">0</span>
+            </button>
+        </div>
+    </div>
+</div>
+            
+            <!-- Колонка 2: Этапы и информация о рецепте -->
+            <div class="column stages-column">
+                <div class="stages-container">
+                    <h2>Этапы создания</h2>
+                    
+                    <div class="current-recipe-info" id="currentRecipeInfo">
+                        <div class="no-recipe-selected">
+                            <div class="placeholder-icon">⚗️</div>
+                            <p>Выберите реагент для создания</p>
+                        </div>
+                    </div>
+                    
+                    <div class="recipe-stages" id="recipeStages">
+                        <div class="stages-list" id="stagesList">
+                            <div class="stage-empty">
+                                <div class="placeholder-icon">📋</div>
+                                <p>Этапы появятся здесь после выбора рецепта</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Колонка 3: Весы -->
+            <div class="column scales-column">
+                <div class="scales-container">
+                    <h2>Научный реактор</h2>
+                    
+                    <div class="scales-visual" id="scalesVisual">
+                        <div class="scale-base"></div>
+                        <div class="scale-beam" id="scaleBeam">
+                            <div class="scale-pivot"></div>
+                            <div class="scale-pointer"></div>
+                        </div>
+                        
+                        <div class="pans-container">
+                            <div class="pan left-pan">
+                                <div class="pan-handle"></div>
+                                <div class="pan-label">Химикаты</div>
+                                <div class="pan-content" id="leftPanContent">
+                                    <div class="weight-limit-message" id="weightLimitMessage">Макс. 4 химиката</div>
+                                </div>
+                            </div>
+                            
+                            <div class="pan right-pan">
+                                <div class="pan-handle"></div>
+                                <div class="pan-label">Компоненты</div>
+                                <div class="pan-content" id="rightPanContent"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="weight-display">
+                            <div class="weight-left">Левая колба: <span id="leftWeightValue">0</span> г</div>
+                            <div class="weight-right">Правая колба: <span id="rightWeightValue">0</span> г</div>
+                        </div>
+                    </div>
+                    
+                    <div class="scales-controls">
+                        <button class="button check-button" id="checkRecipeButton">Создать реагент</button>
+                        <button class="button reset-button" id="resetScalesButton">Сбросить реактор</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Колонка 4: Ингредиенты -->
+            <div class="column ingredients-column">
+                <div class="ingredients-container">
+                    <h2>Ресурсы команды</h2>
+                    
+                    <div class="available-resources">
+                        <div class="weights-list">
+                            <h3>Доступные химикаты (макс. 10)</h3>
+                            <div id="availableWeights" class="resources-grid">
+                                <div class="empty-resources">Химикаты еще не получены</div>
+                            </div>
+                        </div>
+                        
+                        <div class="ingredients-list">
+                            <h3>Доступные компоненты (макс. 10)</h3>
+                            <div id="availableIngredients" class="resources-grid">
+                                <div class="empty-resources">Компоненты еще не получены</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Временный скрипт для предотвращения ошибок, пока не загрузится основной JS
+        document.addEventListener('DOMContentLoaded', function() {
+            // Базовые обработчики для предотвращения ошибок
+            const closeButtons = document.querySelectorAll('.close-button');
+            closeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const overlay = this.closest('[class*="overlay"]');
+                    if (overlay) {
+                        overlay.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Обработчики для backdrop
+            const backdrops = document.querySelectorAll('[class*="backdrop"]');
+            backdrops.forEach(backdrop => {
+                backdrop.addEventListener('click', function() {
+                    const overlay = this.closest('[class*="overlay"]');
+                    if (overlay) {
+                        overlay.classList.remove('active');
+                    }
+                });
+            });
+            
+            // Обработчик для кнопки пропуска обучения
+            const skipTutorialButton = document.getElementById('skipTutorialButton');
+            if (skipTutorialButton) {
+                skipTutorialButton.addEventListener('click', function() {
+                    const tutorialOverlay = document.getElementById('tutorialOverlay');
+                    if (tutorialOverlay) {
+                        tutorialOverlay.classList.remove('active');
+                    }
+                });
+            }
+        });
+    </script>
+    <script src="js/player3.js"></script>
+</body>
+</html>

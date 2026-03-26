@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Выбор роли - Экспериментариум</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rubik', 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        /* Научный фон с элементами */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(34, 197, 94, 0.05) 0%, transparent 50%);
+            z-index: -2;
+        }
+
+        .science-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px 0;
+            width: 100%;
+            max-width: 1200px;
+            position: relative;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #3b82f6, #10b981, transparent);
+            border-radius: 2px;
+        }
+
+        .header h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #60a5fa 0%, #34d399 50%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 4px 30px rgba(96, 165, 250, 0.3);
+            letter-spacing: -0.5px;
+        }
+
+        .room-info {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            border-radius: 16px;
+            margin-bottom: 40px;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            font-size: 1.2rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .roles-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 50px;
+        }
+
+        .role-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+            border-radius: 20px;
+            padding: 30px;
+            border: 2px solid rgba(59, 130, 246, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #3b82f6, #10b981, #8b5cf6);
+        }
+
+        .role-card:hover {
+            transform: translateY(-10px) scale(1.03);
+            border-color: #3b82f6;
+            box-shadow: 0 20px 50px rgba(59, 130, 246, 0.4);
+        }
+
+        .role-card.available:hover {
+            border-color: #10b981;
+        }
+
+        .role-card.taken {
+            opacity: 0.7;
+            cursor: not-allowed;
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        .role-card.taken:hover {
+            transform: none;
+            border-color: rgba(148, 163, 184, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .role-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            border: 2px solid rgba(59, 130, 246, 0.4);
+            margin-bottom: 20px;
+        }
+
+        .role-card.taken .role-icon {
+            background: linear-gradient(135deg, rgba(148, 163, 184, 0.2), rgba(100, 116, 139, 0.2));
+            border-color: rgba(148, 163, 184, 0.4);
+        }
+
+        .role-card.available .role-icon {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.2));
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+
+        .role-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 15px;
+        }
+
+        .role-description {
+            font-size: 1rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .role-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+
+        .role-tag {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .role-status {
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            width: 100%;
+            text-align: center;
+        }
+
+        .status-available {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .status-taken {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            color: #cbd5e1;
+        }
+
+        .navigation {
+            display: flex;
+            gap: 25px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 18px 40px;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-weight: 700;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(139, 92, 246, 0.6);
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(59, 130, 246, 0.6);
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        }
+
+        .loading {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 80px 20px;
+            font-size: 1.3rem;
+            color: #60a5fa;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            margin-left: 15px;
+            border: 3px solid rgba(96, 165, 250, 0.3);
+            border-top-color: #60a5fa;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message, .info-message {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            font-weight: 600;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+            border-left: 5px solid;
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .error-message {
+            color: #f87171;
+            border-left-color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .info-message {
+            color: #34d399;
+            border-left-color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Модальное окно подтверждения */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .confirmation-modal {
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95));
+            border-radius: 24px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            border: 2px solid rgba(59, 130, 246, 0.4);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            transform: translateY(-30px) scale(0.9);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            backdrop-filter: blur(20px);
+        }
+
+        .modal-overlay.active .confirmation-modal {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+
+        .modal-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.2));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            margin: 0 auto 25px;
+            border: 3px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-message {
+            text-align: center;
+            color: #cbd5e1;
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .modal-role-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .modal-role-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #60a5fa;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .modal-role-description {
+            color: #94a3b8;
+            text-align: center;
+            font-size: 1rem;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 16px 32px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 140px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .modal-btn.confirm {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .modal-btn.confirm:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(16, 185, 129, 0.6);
+        }
+
+        .modal-btn.cancel {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            color: #cbd5e1;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-btn.cancel:hover {
+            transform: translateY(-3px);
+            background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        }
+
+        /* Парящие элементы */
+        .floating-element {
+            position: fixed;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.15), transparent 70%);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        .floating-element:nth-child(1) {
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+
+        .floating-element:nth-child(2) {
+            top: 70%;
+            right: 10%;
+            animation-delay: -2s;
+            background: radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.15), transparent 70%);
+        }
+
+        .floating-element:nth-child(3) {
+            bottom: 20%;
+            left: 15%;
+            animation-delay: -4s;
+            background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.15), transparent 70%);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        /* ========== ИСПРАВЛЕННЫЕ СТИЛИ ОБУЧЕНИЯ (БЛОКИРОВКА ТОЛЬКО В АКТИВНОМ СОСТОЯНИИ) ========== */
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;        /* По умолчанию не перехватывает */
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .tutorial-overlay.active {
+            opacity: 1;
+            pointer-events: all;        /* Активен — перехватывает */
+        }
+
+        .tutorial-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            pointer-events: none;       /* ИСПРАВЛЕНО: не перехватывает в неактивном состоянии */
+        }
+
+        .tutorial-overlay.active .tutorial-backdrop {
+            pointer-events: all;        /* Только при активном оверлее блокирует */
+        }
+
+        .tutorial-character-container {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            transform: translateX(100px);
+            opacity: 0;
+            transition: all 0.5s ease 0.2s;
+            z-index: 2001;
+            pointer-events: none;       /* ИСПРАВЛЕНО */
+            max-width: 400px;
+        }
+
+        .tutorial-character-container.active {
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: all;       /* Активно — можно кликнуть по диалогу (но там нет кнопок) */
+        }
+
+        .tutorial-dialogue-overlay {
+            position: relative;
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+            border-radius: 20px;
+            padding: 20px 25px;
+            min-width: 300px;
+            max-width: 380px;
+            margin-bottom: 20px;
+            border: 2px solid #3b82f6;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: all 0.4s ease 0.1s;
+            color: #f1f5f9;
+            border-left: 6px solid #3b82f6;
+            pointer-events: none;       /* Не мешает кликам */
+        }
+
+        .tutorial-dialogue-overlay.active {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .tutorial-dialogue-overlay::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            right: 40px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 15px solid #3b82f6;
+        }
+
+        #tutorialDialogueText {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            text-align: left;
+            word-break: break-word;
+        }
+
+        .tutorial-progress-bar {
+            height: 6px;
+            background: #1e293b;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .tutorial-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 3px;
+        }
+
+        /* ИЗОБРАЖЕНИЕ ПЕРСОНАЖА – БЕЗ РАМКИ, БЕЗ ФОНА */
+        .tutorial-character-image {
+            width: 280px;
+            height: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.5));
+            border-radius: 10px;
+            border: none;
+            background: none;
+        }
+
+        @media (max-width: 1000px) {
+            .roles-container {
+                grid-template-columns: repeat(2, 1fr);
+                max-width: 800px;
+            }
+
+            .tutorial-character-container {
+                bottom: 20px;
+                right: 20px;
+                max-width: 320px;
+            }
+
+            .tutorial-dialogue-overlay {
+                min-width: 260px;
+                padding: 15px 20px;
+            }
+
+            .tutorial-character-image {
+                width: 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .roles-container {
+                grid-template-columns: 1fr;
+                max-width: 400px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .navigation {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 400px;
+                justify-content: center;
+            }
+            
+            .modal-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .modal-btn {
+                width: 100%;
+            }
+            
+            .confirmation-modal {
+                padding: 30px 25px;
+                width: 95%;
+            }
+            
+            .modal-icon {
+                width: 80px;
+                height: 80px;
+                font-size: 2.8rem;
+            }
+            
+            .modal-title {
+                font-size: 1.7rem;
+            }
+
+            .tutorial-character-container {
+                bottom: 15px;
+                right: 15px;
+                left: 15px;
+                align-items: center;
+                max-width: 100%;
+            }
+
+            .tutorial-dialogue-overlay {
+                min-width: auto;
+                width: 100%;
+                max-width: 100%;
+            }
+
+            .tutorial-dialogue-overlay::after {
+                right: 30px;
+            }
+
+            .tutorial-character-image {
+                width: 160px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .floating-element {
+                display: none;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Парящие элементы -->
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    <div class="floating-element"></div>
+    
+    <!-- Научная сетка -->
+    <div class="science-grid"></div>
+
+    <!-- ========== ОБУЧЕНИЕ С ПЕРСОНАЖЕМ (ИЗОБРАЖЕНИЕ БЕЗ РАМКИ) ========== -->
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-backdrop"></div>
+        <div class="tutorial-character-container" id="tutorialCharacterContainer">
+            <div class="tutorial-dialogue-overlay" id="tutorialDialogue">
+                <p id="tutorialDialogueText">Загрузка...</p>
+                <div class="tutorial-progress-bar">
+                    <div class="tutorial-progress-fill" id="tutorialProgressFill"></div>
+                </div>
+            </div>
+            <img id="tutorialCharacterImage" src="images/stage1.png" alt="Профессор Химикус" class="tutorial-character-image">
+        </div>
+    </div>
+
+    <!-- Модальное окно подтверждения -->
+    <div class="modal-overlay" id="confirmationModal">
+        <div class="confirmation-modal">
+            <div class="modal-icon">⚗️</div>
+            <h2 class="modal-title">Подтвердите выбор</h2>
+            <p class="modal-message">Вы действительно хотите выбрать эту роль для участия в эксперименте?</p>
+            
+            <div class="modal-role-info">
+                <div class="modal-role-name" id="modalRoleName">Химик</div>
+                <div class="modal-role-description" id="modalRoleDescription">
+                    Синтезируйте химические вещества для реагентов
+                </div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button class="modal-btn cancel" id="cancelBtn">Отмена</button>
+                <button class="modal-btn confirm" id="confirmBtn">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>Выберите свою роль в команде</h1>
+        <div class="room-info" id="roomInfo">Загрузка информации о команде...</div>
+    </div>
+
+    <div class="roles-container" id="rolesContainer">
+        <div class="loading">Загрузка доступных ролей...</div>
+    </div>
+
+    <div class="navigation">
+        <a href="/room-selection" class="btn btn-secondary">⬅️ Выбор команды</a>
+        <a href="/leaderboard" class="btn btn-primary">🏆 Таблица лидеров</a>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // ========== СИСТЕМА ОБУЧЕНИЯ ДЛЯ СТРАНИЦЫ ВЫБОРА РОЛИ ==========
+        class RoleTutorial {
+            constructor() {
+                this.stages = [
+                    {
+                        dialogue: "Теперь вы находитесь в комнате выбора роли.",
+                        image: "/images/stage1.png",
+                        duration: 6000 // 9 секунд
+                    },
+                    {
+                        dialogue: "В вашей команде три уникальные роли: Химик создаёт химикаты, Исследователь добывает компоненты, Лаборант создает и распоряжается реагентами. Выберите свободную роль и станьте частью команды!",
+                        image: "/images/stage2pl3.png",
+                        duration: 12000 // 12 секунд
+                    }
+                ];
+
+                this.currentStage = 0;
+                this.progressInterval = null;
+                this.isActive = false;
+
+                // Элементы
+                this.overlay = document.getElementById('tutorialOverlay');
+                this.characterContainer = document.getElementById('tutorialCharacterContainer');
+                this.dialogue = document.getElementById('tutorialDialogue');
+                this.dialogueText = document.getElementById('tutorialDialogueText');
+                this.progressFill = document.getElementById('tutorialProgressFill');
+                this.characterImage = document.getElementById('tutorialCharacterImage');
+            }
+
+            start() {
+                this.isActive = true;
+                this.overlay.classList.add('active');
+                this.showStage(0);
+            }
+
+            showStage(index) {
+                if (index >= this.stages.length) {
+                    this.complete();
+                    return;
+                }
+
+                this.currentStage = index;
+                const stage = this.stages[index];
+
+                // Скрываем предыдущие элементы
+                this.dialogue.classList.remove('active');
+                this.characterContainer.classList.remove('active');
+
+                // Устанавливаем текст
+                this.dialogueText.textContent = stage.dialogue;
+
+                // Устанавливаем изображение
+                if (stage.image) {
+                    this.characterImage.src = stage.image;
+                    this.characterImage.alt = `Профессор Химикус - этап ${index + 1}`;
+                    this.characterImage.onerror = () => {
+                        console.warn(`Не удалось загрузить изображение: ${stage.image}`);
+                    };
+                }
+
+                // Активируем с задержками для плавности
+                setTimeout(() => {
+                    this.characterContainer.classList.add('active');
+                }, 100);
+                setTimeout(() => {
+                    this.dialogue.classList.add('active');
+                }, 300);
+
+                // Запускаем прогресс-бар
+                this.startProgressBar(stage.duration);
+            }
+
+            startProgressBar(duration) {
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                }
+
+                let startTime = Date.now();
+                this.progressFill.style.width = '0%';
+
+                this.progressInterval = setInterval(() => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min((elapsed / duration) * 100, 100);
+                    this.progressFill.style.width = `${progress}%`;
+
+                    if (elapsed >= duration) {
+                        clearInterval(this.progressInterval);
+                        this.nextStage();
+                    }
+                }, 50);
+            }
+
+            nextStage() {
+                this.showStage(this.currentStage + 1);
+            }
+
+            complete() {
+                this.isActive = false;
+                if (this.progressInterval) {
+                    clearInterval(this.progressInterval);
+                }
+
+                // Плавно скрываем элементы
+                this.dialogue.classList.remove('active');
+                this.characterContainer.classList.remove('active');
+
+                setTimeout(() => {
+                    this.overlay.classList.remove('active');
+                    // НЕ сохраняем флаг — обучение будет показываться каждый раз
+                }, 500);
+            }
+        }
+
+        // ========== ОСНОВНАЯ ЛОГИКА СТРАНИЦЫ ВЫБОРА РОЛИ ==========
+        const socket = io();
+        const pathSegments = window.location.pathname.split('/');
+        const roomId = pathSegments[pathSegments.length - 1];
+        
+        console.log('Room ID from URL:', roomId);
+        
+        const rolesContainer = document.getElementById('rolesContainer');
+        const roomInfo = document.getElementById('roomInfo');
+        const confirmationModal = document.getElementById('confirmationModal');
+        const modalRoleName = document.getElementById('modalRoleName');
+        const modalRoleDescription = document.getElementById('modalRoleDescription');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        let selectedRole = null;
+
+        // Запрос информации о комнате при загрузке
+        socket.emit('get-rooms');
+
+        // Обработка получения списка комнат
+        socket.on('rooms-list', (rooms) => {
+            console.log('Получены комнаты:', rooms);
+            const currentRoom = rooms.find(room => room.id === roomId);
+            if (currentRoom) {
+                updateRoomInfo(currentRoom);
+            } else {
+                showError('Команда не найдена');
+            }
+        });
+
+        // Обработка обновления комнат
+        socket.on('rooms-updated', (rooms) => {
+            console.log('Обновление комнат:', rooms);
+            const currentRoom = rooms.find(room => room.id === roomId);
+            if (currentRoom) {
+                updateRoomInfo(currentRoom);
+            }
+        });
+
+        function showError(message) {
+            rolesContainer.innerHTML = `<div class="error-message">${message}</div>`;
+            roomInfo.textContent = 'Ошибка загрузки команды';
+        }
+
+        function showConfirmationModal(role) {
+            selectedRole = role;
+            modalRoleName.textContent = role.name;
+            modalRoleDescription.textContent = role.description;
+            confirmationModal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideConfirmationModal() {
+            confirmationModal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+            selectedRole = null;
+        }
+
+        function handleRoleConfirmation() {
+            if (selectedRole) {
+                console.log(`Выбрана роль: ${selectedRole.name}, переход на: ${selectedRole.page}/${roomId}`);
+                window.location.href = `${selectedRole.page}/${roomId}`;
+            }
+        }
+
+        // Обработчики для модального окна
+        cancelBtn.addEventListener('click', hideConfirmationModal);
+        confirmBtn.addEventListener('click', handleRoleConfirmation);
+
+        // Закрытие модального окна при клике на фон
+        confirmationModal.addEventListener('click', (e) => {
+            if (e.target === confirmationModal) {
+                hideConfirmationModal();
+            }
+        });
+
+        // Закрытие модального окна при нажатии Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && confirmationModal.classList.contains('active')) {
+                hideConfirmationModal();
+            }
+        });
+
+        function updateRoomInfo(room) {
+            console.log('Обновление информации о команде:', room);
+            
+            if (room.completed) {
+                roomInfo.innerHTML = `
+                    <span style="color: #10b981; font-weight: bold;">✅ ЭКСПЕРИМЕНТ ЗАВЕРШЁН</span><br>
+                    <span style="font-size: 1rem;">Команда: ${room.name} • Игроков: ${room.playersCount || 0}/${room.maxPlayers || 4}</span>
+                `;
+            } else {
+                roomInfo.innerHTML = `
+                    <span style="color: #60a5fa; font-weight: bold;">⚗️ ${room.name}</span><br>
+                    <span style="font-size: 1rem;">Игроков: ${room.playersCount || 0}/${room.maxPlayers || 4}</span>
+                `;
+            }
+            
+            // Показываем доступные роли
+            showAvailableRoles(room);
+        }
+
+        function showAvailableRoles(room) {
+            console.log('Показ доступных ролей для комнаты:', room);
+            
+            // Определяем занятые роли
+            const takenRoles = new Set();
+            if (room.players && typeof room.players === 'object') {
+                Object.values(room.players).forEach(player => {
+                    takenRoles.add(player.playerType);
+                });
+            }
+
+            const roles = [
+                {
+                    type: 'weightGatherer',
+                    icon: '⚗️',
+                    name: 'Химик',
+                    description: 'Синтезируйте химические вещества для реагентов',
+                    page: '/player1',
+                    tags: ['Рецепты', 'Химикаты', 'Точность']
+                },
+                {
+                    type: 'ingredientGatherer', 
+                    icon: '🧫',
+                    name: 'Исследователь',
+                    description: 'Проводите исследования для получения компонентов',
+                    page: '/player2',
+                    tags: ['Сбор', 'Исследования', 'Анализ']
+                },
+                {
+                    type: 'potionMaker',
+                    icon: '🧪', 
+                    name: 'Лаборант',
+                    description: 'Проводите эксперименты, создавая уникальные реагенты и управляя лабораторией',
+                    page: '/player3',
+                    tags: ['Эксперименты', 'Синтез', 'Контроль']
+                }
+            ];
+
+            rolesContainer.innerHTML = '';
+
+            // Проверяем, можно ли еще присоединиться
+            const totalPlayers = room.playersCount || 0;
+            const maxPlayers = room.maxPlayers || 4;
+            
+            if (room.completed) {
+                const message = document.createElement('div');
+                message.className = 'info-message';
+                message.innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: #10b981;">✅ Эксперимент завершён</h3>
+                    <p style="color: #cbd5e1;">Эта команда уже завершила свой эксперимент.</p>
+                    <p style="color: #94a3b8; margin-top: 10px;">Выберите другую команду для участия.</p>
+                `;
+                rolesContainer.appendChild(message);
+                return;
+            }
+
+            if (totalPlayers >= maxPlayers) {
+                const message = document.createElement('div');
+                message.className = 'info-message';
+                message.innerHTML = `
+                    <h3 style="margin-bottom: 15px; color: #fbbf24;">⚠️ Команда заполнена</h3>
+                    <p style="color: #cbd5e1;">Все места в команде заняты (${totalPlayers}/${maxPlayers} игроков).</p>
+                    <p style="color: #94a3b8; margin-top: 10px;">Выберите другую команду или дождитесь, когда освободится место.</p>
+                `;
+                rolesContainer.appendChild(message);
+            }
+
+            roles.forEach(role => {
+                const isTaken = takenRoles.has(role.type);
+                const roleCard = document.createElement('div');
+                roleCard.className = `role-card ${isTaken ? 'taken' : 'available'}`;
+                
+                roleCard.innerHTML = `
+                    <div class="role-icon">${role.icon}</div>
+                    <div class="role-name">${role.name}</div>
+                    <div class="role-description">${role.description}</div>
+                    <div class="role-tags">
+                        ${role.tags.map(tag => `<span class="role-tag">${tag}</span>`).join('')}
+                    </div>
+                    <div class="role-status ${isTaken ? 'status-taken' : 'status-available'}">
+                        ${isTaken ? '❌ Занята' : '✅ Доступна'}
+                    </div>
+                `;
+
+                if (!isTaken && !room.completed && totalPlayers < maxPlayers) {
+                    roleCard.addEventListener('click', () => {
+                        showConfirmationModal(role);
+                    });
+                } else if (isTaken) {
+                    roleCard.title = 'Эта роль уже занята другим игроком';
+                }
+
+                rolesContainer.appendChild(roleCard);
+            });
+        }
+
+        // Обработка ошибок соединения
+        socket.on('connect_error', (error) => {
+            console.error('Ошибка подключения:', error);
+            showError('Ошибка подключения к серверу');
+        });
+
+        // Обработка ошибок от сервера
+        socket.on('error', (data) => {
+            console.error('Ошибка от сервера:', data);
+            showError(data.message || 'Произошла ошибка');
+        });
+
+        // Периодически запрашиваем обновление комнат
+        setInterval(() => {
+            socket.emit('get-rooms');
+        }, 5000);
+
+        // При загрузке страницы сразу запрашиваем обновление
+        window.addEventListener('load', () => {
+            socket.emit('get-rooms');
+        });
+
+        // ========== ЗАПУСК ОБУЧЕНИЯ ПРИ КАЖДОЙ ЗАГРУЗКЕ ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            const tutorial = new RoleTutorial();
+            tutorial.start();
+        });
+    </script>
+</body>
+</html>
