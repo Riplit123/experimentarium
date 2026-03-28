@@ -18,58 +18,25 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-const MAX_PLAYERS_PER_ROOM = 3;
-const MAX_ROOMS = 20;
-const MIN_ROOMS = 3;
+// ================== КОНФИГУРАЦИЯ ==================
+const MAX_PLAYERS_PER_TEAM = 3;
+const DEFAULT_TEAMS_PER_LOBBY = 3;
 
+// ================== СОСТОЯНИЕ ИГРЫ ==================
 const gameState = {
-  rooms: {},
-  leaderboard: []
+  lobbies: {},
+  leaderboard: [],
+  layouts: {} // для хранения расположения элементов на страницах
 };
 
-function initializeRooms() {
-  const roomIcons = ['🐉', '🦅', '🦄', '🐺', '🐍', '🦁', '🐯', '🦊', '🐻', '🦉', 
-                     '🐬', '🦋', '🐘', '🦏', '🦛', '🐪', '🦘', '🦌', '🐎', '🐲'];
-  
-  for (let i = 1; i <= MIN_ROOMS; i++) {
-    const roomId = `room${i}`;
-    gameState.rooms[roomId] = {
-      id: roomId,
-      name: `Команда ${i}`,
-      icon: roomIcons[i - 1] || '🐾',
-      players: {},
-      resources: {
-        weights: [],
-        ingredients: [],
-        metals: []
-      },
-      potions: [],
-      currentRecipe: null,
-      score: 0,
-      completed: false,
-      completedAt: null,
-      defenseActive: false,
-      // Кулдауны по атакующим командам
-      cooldownsByAttacker: {},
-      // Эффекты атак
-      ingredientBlocked: null,
-      ingredientBlockTimer: null,
-      ingredientSendBlocked: false,
-      ingredientSendBlockTimer: null,
-      createdAt: new Date().toISOString(),
-      maxPlayers: MAX_PLAYERS_PER_ROOM
-    };
-  }
-}
-
+// ================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ==================
 function getNetworkIP() {
   const interfaces = os.networkInterfaces();
   const results = [];
-  
   for (const name of Object.keys(interfaces)) {
-    for (const interface of interfaces[name]) {
-      if (interface.family === 'IPv4' && !interface.internal) {
-        results.push(interface.address);
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        results.push(iface.address);
       }
     }
   }
@@ -77,21 +44,27 @@ function getNetworkIP() {
 }
 
 function updateLeaderboard() {
-  const roomsArray = Object.values(gameState.rooms).map(room => ({
-    id: room.id,
-    name: room.name,
-    icon: room.icon,
-    score: room.score,
-    completed: room.completed,
-    completedAt: room.completedAt,
-    playersCount: Object.keys(room.players).length,
-    potionsCount: room.potions.length,
-    defenseActive: room.defenseActive,
-    maxPlayers: room.maxPlayers,
-    createdAt: room.createdAt
-  }));
+  let allTeams = [];
+  for (const [lobbyId, lobby] of Object.entries(gameState.lobbies)) {
+    for (const [teamId, team] of Object.entries(lobby.teams)) {
+      allTeams.push({
+        id: team.id,
+        lobbyId: lobbyId,
+        name: team.name,
+        icon: team.icon,
+        score: team.score,
+        completed: team.completed,
+        completedAt: team.completedAt,
+        playersCount: Object.keys(team.players).length,
+        potionsCount: team.potions.length,
+        defenseActive: team.defenseActive,
+        maxPlayers: team.maxPlayers,
+        createdAt: team.createdAt
+      });
+    }
+  }
 
-  gameState.leaderboard = roomsArray.sort((a, b) => {
+  gameState.leaderboard = allTeams.sort((a, b) => {
     if (a.completed && b.completed) {
       if (a.score !== b.score) return b.score - a.score;
       return new Date(a.completedAt) - new Date(b.completedAt);
@@ -104,147 +77,149 @@ function updateLeaderboard() {
   io.emit('leaderboard-updated', gameState.leaderboard);
 }
 
-function checkGameCompletion(roomId) {
-  const room = gameState.rooms[roomId];
-  if (room.potions.length >= 999 && !room.completed) {
-    room.completed = true;
-    room.completedAt = new Date().toISOString();
-    
-    console.log(`🎉 Комната ${roomId} завершила игру!`);
-    
+function checkGameCompletion(team) {
+  if (team.potions.length >= 999 && !team.completed) {
+    team.completed = true;
+    team.completedAt = new Date().toISOString();
+    console.log(`🎉 Команда ${team.id} завершила игру!`);
     io.emit('game-completed', {
-      roomId: roomId,
-      roomName: room.name,
-      score: room.score,
-      potionsCount: room.potions.length,
-      completedAt: room.completedAt
+      teamId: team.id,
+      teamName: team.name,
+      score: team.score,
+      potionsCount: team.potions.length,
+      completedAt: team.completedAt
     });
-    
     updateLeaderboard();
   }
 }
 
-// Проверка кулдауна для конкретного атакующего
-function checkAttackCooldown(attackerRoomId, targetRoomId) {
-  const targetRoom = gameState.rooms[targetRoomId];
-  if (!targetRoom || !targetRoom.cooldownsByAttacker) {
+function checkAttackCooldown(attackerTeamId, targetTeamId) {
+  const targetTeam = getTeamById(targetTeamId);
+  if (!targetTeam || !targetTeam.cooldownsByAttacker) {
     return { canAttack: true, remainingTime: 0 };
   }
-  
-  const cooldownEnd = targetRoom.cooldownsByAttacker[attackerRoomId];
+  const cooldownEnd = targetTeam.cooldownsByAttacker[attackerTeamId];
   if (!cooldownEnd) return { canAttack: true, remainingTime: 0 };
-  
   const now = Date.now();
   if (cooldownEnd > now) {
     const remainingTime = Math.ceil((cooldownEnd - now) / 1000);
-    return { 
-      canAttack: false, 
-      remainingTime,
-      reason: 'Кулдаун после атаки'
-    };
+    return { canAttack: false, remainingTime, reason: 'Кулдаун после атаки' };
   }
-  
   return { canAttack: true, remainingTime: 0 };
 }
 
-// Установка кулдауна для конкретной пары
-function setAttackCooldown(attackerRoomId, targetRoomId, duration = 60000) {
-  const targetRoom = gameState.rooms[targetRoomId];
-  if (!targetRoom) return;
-  
-  if (!targetRoom.cooldownsByAttacker) {
-    targetRoom.cooldownsByAttacker = {};
-  }
-  
+function setAttackCooldown(attackerTeamId, targetTeamId, duration = 60000) {
+  const targetTeam = getTeamById(targetTeamId);
+  if (!targetTeam) return;
+  if (!targetTeam.cooldownsByAttacker) targetTeam.cooldownsByAttacker = {};
   const now = Date.now();
-  targetRoom.cooldownsByAttacker[attackerRoomId] = now + duration;
-  
-  // Автоматически удаляем запись через duration
+  targetTeam.cooldownsByAttacker[attackerTeamId] = now + duration;
   setTimeout(() => {
-    if (targetRoom.cooldownsByAttacker && 
-        targetRoom.cooldownsByAttacker[attackerRoomId] <= Date.now()) {
-      delete targetRoom.cooldownsByAttacker[attackerRoomId];
-      console.log(`Кулдаун для атакующего ${attackerRoomId} на цель ${targetRoomId} снят`);
+    if (targetTeam.cooldownsByAttacker && targetTeam.cooldownsByAttacker[attackerTeamId] <= Date.now()) {
+      delete targetTeam.cooldownsByAttacker[attackerTeamId];
+      console.log(`Кулдаун для атакующего ${attackerTeamId} на цель ${targetTeamId} снят`);
     }
   }, duration + 1000);
 }
 
-function createNewRoom() {
-  const existingRooms = Object.keys(gameState.rooms);
-  const nextRoomNumber = existingRooms.length + 1;
-  
-  if (nextRoomNumber > MAX_ROOMS) {
-    return { success: false, message: `Достигнут лимит ${MAX_ROOMS} команд` };
+function calculateReward(quality) {
+  if (quality >= 90) return { gold: 50, exp: 100, message: "Идеальное зелье! Великолепная работа!" };
+  if (quality >= 70) return { gold: 30, exp: 70, message: "Отличное зелье! Команда работает слаженно!" };
+  if (quality >= 50) return { gold: 20, exp: 50, message: "Хорошее зелье! Продолжайте в том же духе!" };
+  return { gold: 10, exp: 30, message: "Неплохое зелье, но можно лучше!" };
+}
+
+function calculateScore(quality) {
+  if (quality >= 90) return 100;
+  if (quality >= 70) return 70;
+  if (quality >= 50) return 50;
+  return 30;
+}
+
+function getMetalInfo(metalId) {
+  const metals = [
+    { id: 1, name: 'Алый металл', color: '#FF6B6B' },
+    { id: 2, name: 'Лазурный металл', color: '#4ECDC4' },
+    { id: 3, name: 'Золотой металл', color: '#FFD166' },
+    { id: 4, name: 'Изумрудный металл', color: '#06D6A0' },
+    { id: 5, name: 'Сапфировый металл', color: '#118AB2' },
+    { id: 6, name: 'Розовый металл', color: '#EF476F' },
+    { id: 7, name: 'Темный металл', color: '#073B4C' },
+    { id: 8, name: 'Фиолетовый металл', color: '#7209B7' },
+    { id: 9, name: 'Оранжевый металл', color: '#F3722C' },
+    { id: 10, name: 'Светло-зеленый металл', color: '#90BE6D' }
+  ];
+  return metals.find(m => m.id === metalId);
+}
+
+function getTeamById(teamId) {
+  for (const lobby of Object.values(gameState.lobbies)) {
+    if (lobby.teams[teamId]) return lobby.teams[teamId];
   }
-  
-  const roomIcons = ['🐉', '🦅', '🦄', '🐺', '🐍', '🦁', '🐯', '🦊', '🐻', '🦉', 
-                     '🐬', '🦋', '🐘', '🦏', '🦛', '🐪', '🦘', '🦌', '🐎', '🐲'];
-  const roomId = `room${nextRoomNumber}`;
-  
-  gameState.rooms[roomId] = {
-    id: roomId,
-    name: `Команда ${nextRoomNumber}`,
-    icon: roomIcons[nextRoomNumber - 1] || '🐾',
+  return null;
+}
+
+function getLobbyByTeamId(teamId) {
+  for (const lobby of Object.values(gameState.lobbies)) {
+    if (lobby.teams[teamId]) return lobby;
+  }
+  return null;
+}
+
+function broadcastLobbies() {
+  const lobbiesList = Object.values(gameState.lobbies).map(lobby => ({
+    id: lobby.id,
+    name: lobby.name,
+    playersCount: Object.keys(lobby.players).length,
+    icon: '🧪'
+  }));
+  io.emit('lobbies-updated', lobbiesList);
+}
+
+function createDefaultTeams(lobbyId) {
+  const teams = {};
+  const teamIcons = ['🐉', '🦅', '🦄'];
+  for (let i = 1; i <= DEFAULT_TEAMS_PER_LOBBY; i++) {
+    const teamId = `team_${lobbyId}_${i}`;
+    teams[teamId] = {
+      id: teamId,
+      name: `Команда ${i}`,
+      icon: teamIcons[i-1] || '🐾',
+      players: {},
+      resources: { weights: [], ingredients: [], metals: [] },
+      potions: [],
+      currentRecipe: null,
+      score: 0,
+      completed: false,
+      completedAt: null,
+      defenseActive: false,
+      cooldownsByAttacker: {},
+      ingredientBlocked: null,
+      ingredientBlockTimer: null,
+      ingredientSendBlocked: false,
+      ingredientSendBlockTimer: null,
+      createdAt: new Date().toISOString(),
+      maxPlayers: MAX_PLAYERS_PER_TEAM
+    };
+  }
+  return teams;
+}
+
+function createLobby() {
+  const lobbyId = `lobby_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+  const lobbyName = `Лаборатория ${Object.keys(gameState.lobbies).length + 1}`;
+  const defaultTeams = createDefaultTeams(lobbyId);
+  gameState.lobbies[lobbyId] = {
+    id: lobbyId,
+    name: lobbyName,
     players: {},
-    resources: {
-      weights: [],
-      ingredients: [],
-      metals: []
-    },
-    potions: [],
-    currentRecipe: null,
-    score: 0,
-    completed: false,
-    completedAt: null,
-    defenseActive: false,
-    cooldownsByAttacker: {},
-    ingredientBlocked: null,
-    ingredientBlockTimer: null,
-    ingredientSendBlocked: false,
-    ingredientSendBlockTimer: null,
-    createdAt: new Date().toISOString(),
-    maxPlayers: MAX_PLAYERS_PER_ROOM
+    teams: defaultTeams
   };
-  
-  console.log(`✅ Создана новая команда: ${roomId} - ${gameState.rooms[roomId].name}`);
-  
-  updateLeaderboard();
-  
-  return { 
-    success: true, 
-    roomId: roomId,
-    roomName: gameState.rooms[roomId].name,
-    icon: gameState.rooms[roomId].icon
-  };
+  console.log(`✅ Создано лобби: ${lobbyId} (${lobbyName}) с ${DEFAULT_TEAMS_PER_LOBBY} командами`);
+  return { lobbyId, lobbyName, teams: defaultTeams };
 }
 
-function deleteEmptyRoom(roomId) {
-  const room = gameState.rooms[roomId];
-  
-  if (!room) {
-    return { success: false, message: 'Команда не найдена' };
-  }
-  
-  if (Object.keys(room.players).length > 0) {
-    return { success: false, message: 'Команда не пуста' };
-  }
-  
-  const roomNumber = parseInt(roomId.replace('room', ''));
-  if (roomNumber <= MIN_ROOMS) {
-    return { success: false, message: 'Базовые команды нельзя удалять' };
-  }
-  
-  delete gameState.rooms[roomId];
-  
-  console.log(`🗑️ Удалена пустая команда: ${roomId}`);
-  
-  updateLeaderboard();
-  
-  return { success: true, message: 'Команда удалена' };
-}
-
-initializeRooms();
-
+// ================== API МАРШРУТЫ ==================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -277,20 +252,59 @@ app.get('/leaderboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'leaderboard.html'));
 });
 
-app.get('/api/rooms', (req, res) => {
-  const roomsInfo = Object.values(gameState.rooms).map(room => ({
-    id: room.id,
-    name: room.name,
-    icon: room.icon,
-    playersCount: Object.keys(room.players).length,
-    maxPlayers: room.maxPlayers,
-    score: room.score,
-    completed: room.completed,
-    potionsCount: room.potions.length,
-    defenseActive: room.defenseActive,
-    players: room.players
+// API для получения списка лобби
+app.get('/api/lobbies', (req, res) => {
+  const lobbiesInfo = Object.values(gameState.lobbies).map(lobby => ({
+    id: lobby.id,
+    name: lobby.name,
+    playersCount: Object.keys(lobby.players).length,
+    teams: Object.values(lobby.teams).map(team => ({
+      id: team.id,
+      name: team.name,
+      icon: team.icon,
+      playersCount: Object.keys(team.players).length,
+      score: team.score,
+      completed: team.completed
+    }))
   }));
-  res.json(roomsInfo);
+  res.json(lobbiesInfo);
+});
+
+// API для получения списка команд в лобби
+app.get('/api/lobbies/:lobbyId/teams', (req, res) => {
+  const lobby = gameState.lobbies[req.params.lobbyId];
+  if (!lobby) return res.status(404).json({ error: 'Лобби не найдено' });
+  const teamsInfo = Object.values(lobby.teams).map(team => ({
+    id: team.id,
+    name: team.name,
+    icon: team.icon,
+    playersCount: Object.keys(team.players).length,
+    score: team.score,
+    completed: team.completed
+  }));
+  res.json(teamsInfo);
+});
+
+// Старый API для совместимости (возвращаем все команды из всех лобби)
+app.get('/api/rooms', (req, res) => {
+  const allTeams = [];
+  for (const lobby of Object.values(gameState.lobbies)) {
+    for (const team of Object.values(lobby.teams)) {
+      allTeams.push({
+        id: team.id,
+        name: team.name,
+        icon: team.icon,
+        playersCount: Object.keys(team.players).length,
+        maxPlayers: team.maxPlayers,
+        score: team.score,
+        completed: team.completed,
+        potionsCount: team.potions.length,
+        defenseActive: team.defenseActive,
+        players: team.players
+      });
+    }
+  }
+  res.json(allTeams);
 });
 
 app.get('/api/leaderboard', (req, res) => {
@@ -298,35 +312,59 @@ app.get('/api/leaderboard', (req, res) => {
 });
 
 app.post('/api/rooms/create', (req, res) => {
-  const result = createNewRoom();
-  res.json(result);
+  const { lobbyId, teams } = createLobby();
+  const firstTeam = Object.values(teams)[0];
+  res.json({
+    success: true,
+    roomId: firstTeam.id,
+    roomName: firstTeam.name,
+    icon: firstTeam.icon
+  });
 });
 
 app.delete('/api/rooms/:roomId', (req, res) => {
-  const { roomId } = req.params;
-  const result = deleteEmptyRoom(roomId);
-  res.json(result);
+  const teamId = req.params.roomId;
+  const lobby = getLobbyByTeamId(teamId);
+  if (!lobby) return res.json({ success: false, message: 'Команда не найдена' });
+  const team = lobby.teams[teamId];
+  if (!team) return res.json({ success: false, message: 'Команда не найдена' });
+  const isDefault = teamId.match(/^team_\w+_([1-3])$/);
+  if (isDefault) return res.json({ success: false, message: 'Базовые команды нельзя удалять' });
+  if (Object.keys(team.players).length > 0) return res.json({ success: false, message: 'Команда не пуста' });
+  delete lobby.teams[teamId];
+  console.log(`🗑️ Удалена команда ${teamId} из лобби ${lobby.id}`);
+  const teamsList = Object.values(lobby.teams).map(t => ({
+    id: t.id,
+    name: t.name,
+    icon: t.icon,
+    playersCount: Object.keys(t.players).length
+  }));
+  io.to(lobby.id).emit('teams-updated', { lobbyId: lobby.id, teams: teamsList });
+  updateLeaderboard();
+  broadcastLobbies();
+  res.json({ success: true, message: 'Команда удалена' });
 });
 
 app.get('/api/rooms/stats', (req, res) => {
-  const stats = {
-    totalRooms: Object.keys(gameState.rooms).length,
-    activeRooms: Object.values(gameState.rooms).filter(room => 
-      Object.keys(room.players).length > 0
-    ).length,
-    completedRooms: Object.values(gameState.rooms).filter(room => 
-      room.completed
-    ).length,
-    totalPlayers: Object.values(gameState.rooms).reduce((total, room) => 
-      total + Object.keys(room.players).length, 0
-    ),
-    totalPotions: Object.values(gameState.rooms).reduce((total, room) => 
-      total + room.potions.length, 0
-    ),
-    maxRooms: MAX_ROOMS,
-    minRooms: MIN_ROOMS
-  };
-  res.json(stats);
+  let totalTeams = 0, activeTeams = 0, totalPlayers = 0, totalPotions = 0;
+  for (const lobby of Object.values(gameState.lobbies)) {
+    totalTeams += Object.keys(lobby.teams).length;
+    for (const team of Object.values(lobby.teams)) {
+      const playersCount = Object.keys(team.players).length;
+      if (playersCount > 0) activeTeams++;
+      totalPlayers += playersCount;
+      totalPotions += team.potions.length;
+    }
+  }
+  res.json({
+    totalRooms: totalTeams,
+    activeRooms: activeTeams,
+    completedRooms: 0,
+    totalPlayers,
+    totalPotions,
+    maxRooms: 100,
+    minRooms: 0
+  });
 });
 
 app.get('/server-info', (req, res) => {
@@ -349,156 +387,298 @@ app.post('/restart', (req, res) => {
   }
 });
 
+// ================== СОКЕТ-СОБЫТИЯ ==================
 io.on('connection', (socket) => {
   console.log(`Новое подключение: ${socket.id}`);
 
-  // Сохраняем комнату игрока после регистрации
-  socket.on('register-player', (data) => {
-    const { playerId, playerType, playerName, roomId } = data;
-    
-    if (!gameState.rooms[roomId]) {
-      socket.emit('error', { message: 'Команда не найдена' });
+  // ---- Управление лобби ----
+  socket.on('create-lobby', (callback) => {
+    const { lobbyId, lobbyName, teams } = createLobby();
+    gameState.lobbies[lobbyId].players[socket.id] = {
+      socketId: socket.id,
+      playerName: `Игрок ${socket.id.substr(0, 4)}`,
+      joinedAt: new Date().toISOString()
+    };
+    socket.join(lobbyId);
+    socket.data.lobbyId = lobbyId;
+    const teamsList = Object.values(teams).map(team => ({
+      id: team.id,
+      name: team.name,
+      icon: team.icon,
+      playersCount: Object.keys(team.players).length
+    }));
+    if (callback) callback({ success: true, lobbyId, lobbyName, teams: teamsList });
+    broadcastLobbies();
+    updateLeaderboard();
+  });
+
+  socket.on('get-lobbies', () => {
+    const lobbiesList = Object.values(gameState.lobbies).map(lobby => ({
+      id: lobby.id,
+      name: lobby.name,
+      playersCount: Object.keys(lobby.players).length,
+      icon: '🧪'
+    }));
+    socket.emit('lobbies-list', lobbiesList);
+  });
+
+  socket.on('join-lobby', ({ lobbyId }, callback) => {
+    const lobby = gameState.lobbies[lobbyId];
+    if (!lobby) {
+      if (callback) callback({ success: false, message: 'Лаборатория не найдена' });
       return;
     }
-
-    const room = gameState.rooms[roomId];
-    
-    if (Object.keys(room.players).length >= room.maxPlayers) {
-      socket.emit('error', { message: 'Команда уже заполнена' });
+    if (lobby.players[socket.id]) {
+      const teamsList = Object.values(lobby.teams).map(team => ({
+        id: team.id,
+        name: team.name,
+        icon: team.icon,
+        playersCount: Object.keys(team.players).length
+      }));
+      if (callback) callback({ success: true, lobbyId, teams: teamsList });
       return;
     }
+    lobby.players[socket.id] = {
+      socketId: socket.id,
+      playerName: `Игрок ${socket.id.substr(0, 4)}`,
+      joinedAt: new Date().toISOString()
+    };
+    socket.join(lobbyId);
+    socket.data.lobbyId = lobbyId;
+    const teamsList = Object.values(lobby.teams).map(team => ({
+      id: team.id,
+      name: team.name,
+      icon: team.icon,
+      playersCount: Object.keys(team.players).length
+    }));
+    if (callback) callback({ success: true, lobbyId, teams: teamsList });
+    broadcastLobbies();
+    updateLeaderboard();
+  });
 
-    if (room.completed) {
-      socket.emit('error', { message: 'Игра в этой команде уже завершена' });
+  socket.on('create-team', ({ lobbyId, teamName }, callback) => {
+    const lobby = gameState.lobbies[lobbyId];
+    if (!lobby) {
+      if (callback) callback({ success: false, message: 'Лаборатория не найдена' });
       return;
     }
+    if (!lobby.players[socket.id]) {
+      if (callback) callback({ success: false, message: 'Вы не в этой лаборатории' });
+      return;
+    }
+    const teamId = `team_${lobbyId}_${Date.now()}`;
+    lobby.teams[teamId] = {
+      id: teamId,
+      name: teamName,
+      icon: '🧪',
+      players: {},
+      resources: { weights: [], ingredients: [], metals: [] },
+      potions: [],
+      currentRecipe: null,
+      score: 0,
+      completed: false,
+      completedAt: null,
+      defenseActive: false,
+      cooldownsByAttacker: {},
+      ingredientBlocked: null,
+      ingredientBlockTimer: null,
+      ingredientSendBlocked: false,
+      ingredientSendBlockTimer: null,
+      createdAt: new Date().toISOString(),
+      maxPlayers: MAX_PLAYERS_PER_TEAM
+    };
+    const teamsList = Object.values(lobby.teams).map(team => ({
+      id: team.id,
+      name: team.name,
+      icon: team.icon,
+      playersCount: Object.keys(team.players).length
+    }));
+    if (callback) callback({ success: true, teams: teamsList });
+    io.to(lobbyId).emit('teams-updated', { lobbyId, teams: teamsList });
+    updateLeaderboard();
+    broadcastLobbies();
+  });
 
+  socket.on('get-teams', ({ lobbyId }, callback) => {
+    const lobby = gameState.lobbies[lobbyId];
+    if (!lobby) {
+      if (callback) callback({ success: false, message: 'Лаборатория не найдена' });
+      return;
+    }
+    const teamsList = Object.values(lobby.teams).map(team => ({
+      id: team.id,
+      name: team.name,
+      icon: team.icon,
+      playersCount: Object.keys(team.players).length
+    }));
+    if (callback) callback({ success: true, teams: teamsList });
+  });
+
+  // ---- Проверка команды ----
+  socket.on('check-team', ({ teamId, lobbyId }, callback) => {
+    console.log(`Проверка команды: teamId=${teamId}, lobbyId=${lobbyId}`);
+    if (lobbyId && gameState.lobbies[lobbyId] && gameState.lobbies[lobbyId].teams[teamId]) {
+      const team = gameState.lobbies[lobbyId].teams[teamId];
+      callback({
+        success: true,
+        team: {
+          id: team.id,
+          name: team.name,
+          icon: team.icon,
+          players: team.players,
+          maxPlayers: team.maxPlayers,
+          completed: team.completed,
+          playersCount: Object.keys(team.players).length
+        }
+      });
+    } else {
+      const found = getTeamById(teamId);
+      if (found) {
+        const lobby = getLobbyByTeamId(teamId);
+        callback({
+          success: true,
+          team: {
+            id: found.id,
+            name: found.name,
+            icon: found.icon,
+            players: found.players,
+            maxPlayers: found.maxPlayers,
+            completed: found.completed,
+            playersCount: Object.keys(found.players).length
+          },
+          lobbyId: lobby ? lobby.id : null
+        });
+      } else {
+        callback({ success: false, message: 'Команда не найдена' });
+      }
+    }
+  });
+
+  // ---- Игровая логика ----
+  socket.on('register-player', (data, callback) => {
+    const { playerId, playerType, playerName, roomId, lobbyId, teamId } = data;
+    const actualTeamId = roomId || teamId;
+    const team = getTeamById(actualTeamId);
+    if (!team) {
+      if (callback) callback({ error: true, message: 'Команда не найдена' });
+      else socket.emit('error', { message: 'Команда не найдена' });
+      return;
+    }
+    const lobby = getLobbyByTeamId(actualTeamId);
+    if (!lobby) {
+      if (callback) callback({ error: true, message: 'Лобби не найдено' });
+      else socket.emit('error', { message: 'Лобби не найдено' });
+      return;
+    }
+    if (Object.keys(team.players).length >= team.maxPlayers) {
+      if (callback) callback({ error: true, message: 'Команда уже заполнена' });
+      else socket.emit('error', { message: 'Команда уже заполнена' });
+      return;
+    }
+    if (team.completed) {
+      if (callback) callback({ error: true, message: 'Игра в этой команде уже завершена' });
+      else socket.emit('error', { message: 'Игра в этой команде уже завершена' });
+      return;
+    }
     if (playerType !== 'miner') {
-      const existingPlayer = Object.values(room.players).find(
-        player => player.playerType === playerType
-      );
-      
+      const existingPlayer = Object.values(team.players).find(p => p.playerType === playerType);
       if (existingPlayer) {
-        socket.emit('error', { message: 'Эта роль уже занята в выбранной команде' });
+        if (callback) callback({ error: true, message: 'Эта роль уже занята в выбранной команде' });
+        else socket.emit('error', { message: 'Эта роль уже занята в выбранной команде' });
         return;
       }
     }
-
-    room.players[socket.id] = {
+    team.players[socket.id] = {
       playerId,
       playerType,
       playerName,
       socketId: socket.id,
-      roomId: roomId,
+      roomId: actualTeamId,
       connected: true,
       joinedAt: new Date().toISOString()
     };
-
-    socket.join(roomId);
-    socket.data.roomId = roomId; // запоминаем комнату игрока
-
-    console.log(`Зарегистрирован игрок: ${playerName} (${playerType}) в команде ${room.name}`);
-
-    socket.emit('game-state', room);
-    
-    io.to(roomId).emit('player-joined', {
+    socket.join(actualTeamId);
+    socket.data.teamId = actualTeamId;
+    socket.data.lobbyId = lobby.id;
+    console.log(`Зарегистрирован игрок: ${playerName} (${playerType}) в команде ${team.name} (лобби ${lobby.name})`);
+    socket.emit('game-state', team);
+    io.to(actualTeamId).emit('player-joined', {
       playerId,
       playerType,
       playerName,
-      playersCount: Object.keys(room.players).length,
-      roomPlayers: Object.values(room.players)
+      playersCount: Object.keys(team.players).length,
+      roomPlayers: Object.values(team.players)
     });
-
-    const roomsInfo = Object.values(gameState.rooms).map(room => ({
-      id: room.id,
-      name: room.name,
-      icon: room.icon,
-      playersCount: Object.keys(room.players).length,
-      maxPlayers: room.maxPlayers,
-      score: room.score,
-      completed: room.completed,
-      potionsCount: room.potions.length,
-      defenseActive: room.defenseActive,
-      players: room.players
+    const teamsList = Object.values(lobby.teams).map(t => ({
+      id: t.id,
+      name: t.name,
+      icon: t.icon,
+      playersCount: Object.keys(t.players).length
     }));
-    
-    io.emit('rooms-updated', roomsInfo);
-    
+    io.to(lobby.id).emit('teams-updated', { lobbyId: lobby.id, teams: teamsList });
+    broadcastLobbies();
     updateLeaderboard();
+    if (callback) callback({ success: true });
   });
 
   socket.on('get-rooms', () => {
-    const myRoomId = socket.data.roomId; // комната текущего игрока
-    const roomsInfo = Object.values(gameState.rooms).map(room => {
-      let cooldownEndForMe = null;
-      if (myRoomId && room.cooldownsByAttacker && room.cooldownsByAttacker[myRoomId]) {
-        const cd = room.cooldownsByAttacker[myRoomId];
-        if (cd > Date.now()) {
-          cooldownEndForMe = cd;
+    const allTeams = [];
+    for (const lobby of Object.values(gameState.lobbies)) {
+      for (const team of Object.values(lobby.teams)) {
+        let cooldownEndForMe = null;
+        if (socket.data.teamId && team.cooldownsByAttacker && team.cooldownsByAttacker[socket.data.teamId]) {
+          const cd = team.cooldownsByAttacker[socket.data.teamId];
+          if (cd > Date.now()) cooldownEndForMe = cd;
         }
+        allTeams.push({
+          id: team.id,
+          name: team.name,
+          icon: team.icon,
+          playersCount: Object.keys(team.players).length,
+          maxPlayers: team.maxPlayers,
+          score: team.score,
+          completed: team.completed,
+          potionsCount: team.potions.length,
+          defenseActive: team.defenseActive,
+          players: team.players,
+          cooldownEnd: cooldownEndForMe
+        });
       }
-      return {
-        id: room.id,
-        name: room.name,
-        icon: room.icon,
-        playersCount: Object.keys(room.players).length,
-        maxPlayers: room.maxPlayers,
-        score: room.score,
-        completed: room.completed,
-        potionsCount: room.potions.length,
-        defenseActive: room.defenseActive,
-        players: room.players,
-        cooldownEnd: cooldownEndForMe // кулдаун только для запрашивающей команды
-      };
-    });
-    socket.emit('rooms-list', roomsInfo);
-  });
-
-  socket.on('get-leaderboard', () => {
-    socket.emit('leaderboard-updated', gameState.leaderboard);
+    }
+    socket.emit('rooms-list', allTeams);
   });
 
   socket.on('create-room', (callback) => {
-    const result = createNewRoom();
-    if (result.success) {
-      const roomsInfo = Object.values(gameState.rooms).map(room => ({
-        id: room.id,
-        name: room.name,
-        icon: room.icon,
-        playersCount: Object.keys(room.players).length,
-        maxPlayers: room.maxPlayers,
-        score: room.score,
-        completed: room.completed,
-        potionsCount: room.potions.length,
-        defenseActive: room.defenseActive,
-        players: room.players
-      }));
-      
-      io.emit('rooms-updated', roomsInfo);
-    }
-    
-    if (callback) {
-      callback(result);
-    }
+    const { lobbyId, teams } = createLobby();
+    const firstTeam = Object.values(teams)[0];
+    gameState.lobbies[lobbyId].players[socket.id] = {
+      socketId: socket.id,
+      playerName: `Игрок ${socket.id.substr(0, 4)}`,
+      joinedAt: new Date().toISOString()
+    };
+    socket.join(lobbyId);
+    socket.data.lobbyId = lobbyId;
+    if (callback) callback({
+      success: true,
+      roomId: firstTeam.id,
+      roomName: firstTeam.name,
+      icon: firstTeam.icon
+    });
+    broadcastLobbies();
+    updateLeaderboard();
   });
 
+  // --- Другие игровые события (без изменений) ---
   socket.on('send-weights', (data) => {
     const { weights, playerId, roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-    
-    const player = room.players[socket.id];
-    
+    const team = getTeamById(roomId);
+    if (!team) return;
+    const player = team.players[socket.id];
     if (player && player.playerType === 'weightGatherer') {
-      room.resources.weights = [
-        ...room.resources.weights,
-        ...weights
-      ];
-
-      console.log(`Команда ${room.name}: получены гири от ${playerId}:`, weights);
-
+      team.resources.weights = [...team.resources.weights, ...weights];
+      console.log(`Команда ${team.name}: получены гири от ${playerId}:`, weights);
       io.to(roomId).emit('weights-updated', {
-        weights: room.resources.weights,
+        weights: team.resources.weights,
         fromPlayer: playerId
       });
     }
@@ -506,35 +686,19 @@ io.on('connection', (socket) => {
 
   socket.on('send-metals', (data) => {
     const { metals, playerId, roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-    
-    const player = room.players[socket.id];
-    
+    const team = getTeamById(roomId);
+    if (!team) return;
+    const player = team.players[socket.id];
     if (player && player.playerType === 'miner') {
-      if (!room.resources.metals) {
-        room.resources.metals = [];
-      }
-
+      if (!team.resources.metals) team.resources.metals = [];
       metals.forEach(metal => {
-        const existingMetal = room.resources.metals.find(m => m.id === metal.id);
-        
-        if (existingMetal) {
-          existingMetal.count = (existingMetal.count || 0) + (metal.count || 1);
-        } else {
-          room.resources.metals.push({
-            id: metal.id,
-            name: metal.name,
-            color: metal.color,
-            count: metal.count || 1
-          });
-        }
+        const existing = team.resources.metals.find(m => m.id === metal.id);
+        if (existing) existing.count = (existing.count || 0) + (metal.count || 1);
+        else team.resources.metals.push({ id: metal.id, name: metal.name, color: metal.color, count: metal.count || 1 });
       });
-
-      console.log(`Команда ${room.name}: получены металлы от ${playerId}:`, metals);
-
+      console.log(`Команда ${team.name}: получены металлы от ${playerId}:`, metals);
       io.to(roomId).emit('metals-updated', {
-        metals: room.resources.metals,
+        metals: team.resources.metals,
         fromPlayer: playerId
       });
     }
@@ -542,39 +706,26 @@ io.on('connection', (socket) => {
 
   socket.on('send-ingredients', (data) => {
     const { ingredients, playerId, roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-    
-    const player = room.players[socket.id];
-    
+    const team = getTeamById(roomId);
+    if (!team) return;
+    const player = team.players[socket.id];
     if (player && player.playerType === 'ingredientGatherer') {
-      if (room.ingredientSendBlocked) {
+      if (team.ingredientSendBlocked) {
         socket.emit('error', { message: 'Отправка ингредиентов заблокирована на 1 минуту!' });
         return;
       }
-      
-      const filteredIngredients = ingredients.filter(ingredient => {
-        if (room.ingredientBlocked && ingredient.name === room.ingredientBlocked) {
-          console.log(`Игнорируем заблокированный ингредиент: ${ingredient.name}`);
-          return false;
-        }
+      const filtered = ingredients.filter(ing => {
+        if (team.ingredientBlocked && ing.name === team.ingredientBlocked) return false;
         return true;
       });
-      
-      if (filteredIngredients.length === 0) {
-        socket.emit('error', { message: `Все ингредиенты заблокированы! Нельзя отправить ${room.ingredientBlocked}` });
+      if (filtered.length === 0) {
+        socket.emit('error', { message: `Все ингредиенты заблокированы! Нельзя отправить ${team.ingredientBlocked}` });
         return;
       }
-
-      room.resources.ingredients = [
-        ...room.resources.ingredients,
-        ...filteredIngredients
-      ];
-
-      console.log(`Команда ${room.name}: получены ингредиенты от ${playerId}:`, filteredIngredients);
-
+      team.resources.ingredients = [...team.resources.ingredients, ...filtered];
+      console.log(`Команда ${team.name}: получены ингредиенты от ${playerId}:`, filtered);
       io.to(roomId).emit('ingredients-updated', {
-        ingredients: room.resources.ingredients,
+        ingredients: team.resources.ingredients,
         fromPlayer: playerId
       });
     }
@@ -582,11 +733,9 @@ io.on('connection', (socket) => {
 
   socket.on('create-potion', (data) => {
     const { potion, playerId, roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-    
-    const player = room.players[socket.id];
-    
+    const team = getTeamById(roomId);
+    if (!team) return;
+    const player = team.players[socket.id];
     if (player && player.playerType === 'potionMaker') {
       const newPotion = {
         ...potion,
@@ -594,45 +743,29 @@ io.on('connection', (socket) => {
         timestamp: new Date().toISOString(),
         createdBy: playerId
       };
-      
-      room.potions.push(newPotion);
-
-      room.score += calculateScore(potion.quality);
-
-      console.log(`Команда ${room.name}: создано зелье игроком ${playerId}:`, potion);
-
+      team.potions.push(newPotion);
+      team.score += calculateScore(potion.quality);
+      console.log(`Команда ${team.name}: создано зелье игроком ${playerId}:`, potion);
       io.to(roomId).emit('potion-created', {
         potion: newPotion,
-        potionsCount: room.potions.length,
-        roomScore: room.score
+        potionsCount: team.potions.length,
+        roomScore: team.score
       });
-
       const reward = calculateReward(potion.quality);
-      io.to(roomId).emit('team-reward', {
-        reward,
-        potionName: potion.name,
-        quality: potion.quality,
-        createdBy: playerId
-      });
-
+      io.to(roomId).emit('team-reward', { reward, potionName: potion.name, quality: potion.quality, createdBy: playerId });
       updateLeaderboard();
-
-      checkGameCompletion(roomId);
+      checkGameCompletion(team);
     }
   });
 
   socket.on('activate-defense', (data) => {
     const { potionId, potionName, roomId, playerId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-    
-    const player = room.players[socket.id];
-    
+    const team = getTeamById(roomId);
+    if (!team) return;
+    const player = team.players[socket.id];
     if (player && player.playerType === 'potionMaker') {
-      room.defenseActive = true;
-      
-      console.log(`Команда ${room.name}: активирована защита игроком ${playerId}`);
-
+      team.defenseActive = true;
+      console.log(`Команда ${team.name}: активирована защита игроком ${playerId}`);
       io.to(roomId).emit('defense-activated', {
         potionId,
         potionName,
@@ -640,40 +773,31 @@ io.on('connection', (socket) => {
         defenseActive: true,
         defenseCount: 1
       });
-
-      const roomsInfo = Object.values(gameState.rooms).map(room => ({
-        id: room.id,
-        name: room.name,
-        icon: room.icon,
-        playersCount: Object.keys(room.players).length,
-        maxPlayers: room.maxPlayers,
-        score: room.score,
-        completed: room.completed,
-        potionsCount: room.potions.length,
-        defenseActive: room.defenseActive,
-        players: room.players
-      }));
-      
-      io.emit('rooms-updated', roomsInfo);
+      const lobby = getLobbyByTeamId(roomId);
+      if (lobby) {
+        const teamsList = Object.values(lobby.teams).map(t => ({
+          id: t.id,
+          name: t.name,
+          icon: t.icon,
+          playersCount: Object.keys(t.players).length
+        }));
+        io.to(lobby.id).emit('teams-updated', { lobbyId: lobby.id, teams: teamsList });
+      }
+      updateLeaderboard();
     }
   });
 
   socket.on('use-attack-potion', (data) => {
     const { potionId, potionName, potionType, targetRole, roomId, targetRoom, targetIngredient, playerId, playerName } = data;
-    const attackerRoom = gameState.rooms[roomId];
-    const targetRoomObj = gameState.rooms[targetRoom];
-    
-    if (!attackerRoom || !targetRoomObj) {
+    const attackerTeam = getTeamById(roomId);
+    const targetTeam = getTeamById(targetRoom);
+    if (!attackerTeam || !targetTeam) {
       socket.emit('error', { message: 'Команда не найдена' });
       return;
     }
-
-    const player = attackerRoom.players[socket.id];
-    
+    const player = attackerTeam.players[socket.id];
     if (player && player.playerType === 'potionMaker') {
-      console.log(`Игрок ${playerId} из команды ${attackerRoom.name} атакует команду ${targetRoomObj.name} зельем ${potionName}`);
-      
-      // Проверяем кулдаун для этой пары (атакующий -> цель)
+      console.log(`Игрок ${playerId} из команды ${attackerTeam.name} атакует команду ${targetTeam.name} зельем ${potionName}`);
       const cooldownCheck = checkAttackCooldown(roomId, targetRoom);
       if (!cooldownCheck.canAttack) {
         const minutes = Math.floor(cooldownCheck.remainingTime / 60);
@@ -686,85 +810,68 @@ io.on('connection', (socket) => {
         });
         return;
       }
-      
-      if (targetRoomObj.defenseActive) {
-        console.log(`Защита команды ${targetRoomObj.name} отразила атаку`);
-        
-        targetRoomObj.defenseActive = false;
-        
+      if (targetTeam.defenseActive) {
+        console.log(`Защита команды ${targetTeam.name} отразила атаку`);
+        targetTeam.defenseActive = false;
         socket.emit('attack-used', {
           success: false,
           potionName,
           targetRoom,
           message: 'Атака отражена защитой цели'
         });
-        
         io.to(targetRoom).emit('defense-used', {
           attackerRoom: roomId,
           attackerName: playerName,
           potionName,
           defenseActive: false
         });
-        
         io.to(roomId).emit('attack-blocked', {
           targetRoom,
           potionName,
           message: 'Ваша атака была отражена защитой цели'
         });
-        
-        const roomsInfo = Object.values(gameState.rooms).map(room => ({
-          id: room.id,
-          name: room.name,
-          icon: room.icon,
-          playersCount: Object.keys(room.players).length,
-          maxPlayers: room.maxPlayers,
-          score: room.score,
-          completed: room.completed,
-          potionsCount: room.potions.length,
-          defenseActive: room.defenseActive,
-          players: room.players
-        }));
-        
-        io.emit('rooms-updated', roomsInfo);
+        const lobbyTarget = getLobbyByTeamId(targetRoom);
+        if (lobbyTarget) {
+          const teamsList = Object.values(lobbyTarget.teams).map(t => ({
+            id: t.id,
+            name: t.name,
+            icon: t.icon,
+            playersCount: Object.keys(t.players).length
+          }));
+          io.to(lobbyTarget.id).emit('teams-updated', { lobbyId: lobbyTarget.id, teams: teamsList });
+        }
+        updateLeaderboard();
       } else {
-        console.log(`Атака на команду ${targetRoomObj.name} успешна`);
-        
-        // Устанавливаем кулдаун для этой пары
+        console.log(`Атака на команду ${targetTeam.name} успешна`);
         setAttackCooldown(roomId, targetRoom, 60000);
-        
-        // Применяем эффекты атаки (без изменений)
         if (potionType === 'attack3' && targetIngredient) {
-          targetRoomObj.ingredientBlocked = targetIngredient;
-          
-          targetRoomObj.ingredientBlockTimer = setTimeout(() => {
-            targetRoomObj.ingredientBlocked = null;
-            targetRoomObj.ingredientBlockTimer = null;
-            console.log(`Ингредиент ${targetIngredient} разблокирован для команды ${targetRoom}`);
-            
-            io.to(targetRoom).emit('ingredient-unblocked', {
-              ingredient: targetIngredient,
-              message: `Ингредиент "${targetIngredient}" снова доступен для создания`
-            });
+          targetTeam.ingredientBlocked = targetIngredient;
+          if (targetTeam.ingredientBlockTimer) clearTimeout(targetTeam.ingredientBlockTimer);
+          targetTeam.ingredientBlockTimer = setTimeout(() => {
+            if (targetTeam.ingredientBlocked === targetIngredient) {
+              targetTeam.ingredientBlocked = null;
+              targetTeam.ingredientBlockTimer = null;
+              console.log(`Ингредиент ${targetIngredient} разблокирован для команды ${targetRoom}`);
+              io.to(targetRoom).emit('ingredient-unblocked', {
+                ingredient: targetIngredient,
+                message: `Ингредиент "${targetIngredient}" снова доступен для создания`
+              });
+            }
           }, 60000);
-          
-          console.log(`Ингредиент ${targetIngredient} заблокирован для команды ${targetRoomObj.name} на 1 минуту`);
-          
+          console.log(`Ингредиент ${targetIngredient} заблокирован для команды ${targetTeam.name} на 1 минуту`);
         } else if (potionType === 'attack4') {
-          targetRoomObj.ingredientSendBlocked = true;
-          
-          targetRoomObj.ingredientSendBlockTimer = setTimeout(() => {
-            targetRoomObj.ingredientSendBlocked = false;
-            targetRoomObj.ingredientSendBlockTimer = null;
+          targetTeam.ingredientSendBlocked = true;
+          if (targetTeam.ingredientSendBlockTimer) clearTimeout(targetTeam.ingredientSendBlockTimer);
+          targetTeam.ingredientSendBlockTimer = setTimeout(() => {
+            targetTeam.ingredientSendBlocked = false;
+            targetTeam.ingredientSendBlockTimer = null;
             console.log(`Отправка ингредиентов разблокирована для команды ${targetRoom}`);
-            
             io.to(targetRoom).emit('ingredient-send-unblocked', {
               message: 'Отправка ингредиентов снова доступна'
             });
           }, 60000);
-          
-          console.log(`Отправка ингредиентов заблокирована для команды ${targetRoomObj.name} на 1 минуту`);
+          console.log(`Отправка ингредиентов заблокирована для команды ${targetTeam.name} на 1 минуту`);
         }
-        
         io.to(targetRoom).emit('attack-received', {
           potionId,
           potionName,
@@ -775,130 +882,80 @@ io.on('connection', (socket) => {
           attackerName: playerName,
           timestamp: new Date().toISOString()
         });
-        
         socket.emit('attack-used', {
           success: true,
           potionName,
           targetRoom,
           message: 'Атака успешно применена'
         });
-        
-        console.log(`Атака ${potionName} от команды ${attackerRoom.name} применена к команде ${targetRoomObj.name}`);
-        
-        const roomsInfo = Object.values(gameState.rooms).map(room => ({
-          id: room.id,
-          name: room.name,
-          icon: room.icon,
-          playersCount: Object.keys(room.players).length,
-          maxPlayers: room.maxPlayers,
-          score: room.score,
-          completed: room.completed,
-          potionsCount: room.potions.length,
-          defenseActive: room.defenseActive,
-          players: room.players
-        }));
-        
-        io.emit('rooms-updated', roomsInfo);
+        console.log(`Атака ${potionName} от команды ${attackerTeam.name} применена к команде ${targetTeam.name}`);
       }
     }
   });
 
   socket.on('use-resources', (data) => {
     const { weightsUsed, ingredientsUsed, roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-    
-    room.resources.weights = room.resources.weights.filter(
-      weight => !weightsUsed.includes(weight.id)
-    );
-
-    room.resources.ingredients = room.resources.ingredients.filter(
-      ingredient => !ingredientsUsed.includes(ingredient.id)
-    );
-
-    console.log(`Команда ${room.name}: ресурсы использованы:`, { weightsUsed, ingredientsUsed });
-
+    const team = getTeamById(roomId);
+    if (!team) return;
+    team.resources.weights = team.resources.weights.filter(w => !weightsUsed.includes(w.id));
+    team.resources.ingredients = team.resources.ingredients.filter(i => !ingredientsUsed.includes(i.id));
+    console.log(`Команда ${team.name}: ресурсы использованы:`, { weightsUsed, ingredientsUsed });
     io.to(roomId).emit('resources-updated', {
-      weights: room.resources.weights,
-      ingredients: room.resources.ingredients
+      weights: team.resources.weights,
+      ingredients: team.resources.ingredients
     });
   });
 
   socket.on('use-metal', (data) => {
     const { metalId, roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room || !room.resources.metals) return;
-    
-    const metal = room.resources.metals.find(m => m.id === metalId);
+    const team = getTeamById(roomId);
+    if (!team || !team.resources.metals) return;
+    const metal = team.resources.metals.find(m => m.id === metalId);
     if (!metal) return;
-    
-    if (metal.count > 1) {
-      metal.count--;
-    } else {
-      const index = room.resources.metals.findIndex(m => m.id === metalId);
-      if (index !== -1) {
-        room.resources.metals.splice(index, 1);
-      }
+    if (metal.count > 1) metal.count--;
+    else {
+      const index = team.resources.metals.findIndex(m => m.id === metalId);
+      if (index !== -1) team.resources.metals.splice(index, 1);
     }
-    
     io.to(roomId).emit('metals-updated', {
-      metals: room.resources.metals,
+      metals: team.resources.metals,
       fromPlayer: 'system'
     });
   });
 
   socket.on('return-metal', (data) => {
     const { metalId, roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-    
-    if (!room.resources.metals) {
-      room.resources.metals = [];
-    }
-    
-    const existingMetal = room.resources.metals.find(m => m.id === metalId);
-    
-    if (existingMetal) {
-      existingMetal.count = (existingMetal.count || 0) + 1;
-    } else {
+    const team = getTeamById(roomId);
+    if (!team) return;
+    if (!team.resources.metals) team.resources.metals = [];
+    const existing = team.resources.metals.find(m => m.id === metalId);
+    if (existing) existing.count = (existing.count || 0) + 1;
+    else {
       const metalInfo = getMetalInfo(metalId);
-      if (metalInfo) {
-        room.resources.metals.push({
-          id: metalId,
-          name: metalInfo.name,
-          color: metalInfo.color,
-          count: 1
-        });
-      }
+      if (metalInfo) team.resources.metals.push({ id: metalId, name: metalInfo.name, color: metalInfo.color, count: 1 });
     }
-    
     io.to(roomId).emit('metals-updated', {
-      metals: room.resources.metals,
+      metals: team.resources.metals,
       fromPlayer: 'system'
     });
   });
 
   socket.on('reset-all-resources', (data) => {
     const { roomId } = data;
-    const room = gameState.rooms[roomId];
-    if (!room) return;
-
-    console.log(`Команда ${room.name}: сброс всех ресурсов по запросу от зельевара`);
-    
-    room.resources.weights = [];
-    room.resources.ingredients = [];
-    room.resources.metals = [];
-    
+    const team = getTeamById(roomId);
+    if (!team) return;
+    console.log(`Команда ${team.name}: сброс всех ресурсов по запросу от зельевара`);
+    team.resources.weights = [];
+    team.resources.ingredients = [];
+    team.resources.metals = [];
     io.to(roomId).emit('resources-updated', {
-      weights: room.resources.weights,
-      ingredients: room.resources.ingredients
+      weights: team.resources.weights,
+      ingredients: team.resources.ingredients
     });
-    
     io.to(roomId).emit('metals-updated', {
-      metals: room.resources.metals,
+      metals: team.resources.metals,
       fromPlayer: 'system'
     });
-    
     io.to(roomId).emit('all-resources-reset', {
       message: 'Все ресурсы сброшены! Начинаем заново!'
     });
@@ -906,132 +963,116 @@ io.on('connection', (socket) => {
 
   socket.on('get-team-stats', (data) => {
     const { roomId } = data;
-    const room = gameState.rooms[roomId];
-    
-    if (room) {
+    const team = getTeamById(roomId);
+    if (team) {
       socket.emit('team-stats', {
-        potionsCount: room.potions.length,
-        score: room.score,
-        defenseActive: room.defenseActive,
-        players: Object.values(room.players).map(p => ({
-          name: p.playerName,
-          type: p.playerType
-        }))
+        potionsCount: team.potions.length,
+        score: team.score,
+        defenseActive: team.defenseActive,
+        players: Object.values(team.players).map(p => ({ name: p.playerName, type: p.playerType }))
       });
     }
   });
 
   socket.on('get-metals', (data) => {
     const { roomId } = data;
-    const room = gameState.rooms[roomId];
-    
-    if (room) {
-      socket.emit('metals-list', {
-        metals: room.resources.metals || []
-      });
+    const team = getTeamById(roomId);
+    if (team) {
+      socket.emit('metals-list', { metals: team.resources.metals || [] });
     }
   });
 
+  // ---- Layout events ----
+  socket.on('save-layout', (data) => {
+    const { roomId, layout } = data;
+    if (!gameState.layouts) gameState.layouts = {};
+    gameState.layouts[roomId] = layout;
+    console.log(`Layout сохранён для комнаты ${roomId}`);
+    socket.emit('layout-saved', { success: true });
+  });
+
+  socket.on('load-layout', (data) => {
+    const { roomId } = data;
+    if (gameState.layouts && gameState.layouts[roomId]) {
+      socket.emit('layout-loaded', { layout: gameState.layouts[roomId] });
+    } else {
+      socket.emit('layout-loaded', { layout: null });
+    }
+  });
+
+  // ---- Disconnect ----
   socket.on('disconnect', () => {
-    for (const roomId in gameState.rooms) {
-      const room = gameState.rooms[roomId];
-      const player = room.players[socket.id];
-      
-      if (player) {
-        delete room.players[socket.id];
-        console.log(`Игрок отключен: ${player.playerName} из команды ${room.name}`);
-        
-        io.to(roomId).emit('player-left', {
-          playerId: player.playerId,
-          playerName: player.playerName,
-          playersCount: Object.keys(room.players).length,
-          roomPlayers: Object.values(room.players)
-        });
-
-        const roomsInfo = Object.values(gameState.rooms).map(room => ({
-          id: room.id,
-          name: room.name,
-          icon: room.icon,
-          playersCount: Object.keys(room.players).length,
-          maxPlayers: room.maxPlayers,
-          score: room.score,
-          completed: room.completed,
-          potionsCount: room.potions.length,
-          defenseActive: room.defenseActive,
-          players: room.players
+    const lobbyId = socket.data.lobbyId;
+    const teamId = socket.data.teamId;
+    if (lobbyId && gameState.lobbies[lobbyId]) {
+      const lobby = gameState.lobbies[lobbyId];
+      delete lobby.players[socket.id];
+      if (teamId && lobby.teams[teamId]) {
+        const team = lobby.teams[teamId];
+        const player = team.players[socket.id];
+        if (player) {
+          delete team.players[socket.id];
+          console.log(`Игрок отключен: ${player.playerName} из команды ${team.name}`);
+          io.to(teamId).emit('player-left', {
+            playerId: player.playerId,
+            playerName: player.playerName,
+            playersCount: Object.keys(team.players).length,
+            roomPlayers: Object.values(team.players)
+          });
+        }
+        const teamsList = Object.values(lobby.teams).map(t => ({
+          id: t.id,
+          name: t.name,
+          icon: t.icon,
+          playersCount: Object.keys(t.players).length
         }));
-        
-        io.emit('rooms-updated', roomsInfo);
-        
-        break;
+        io.to(lobbyId).emit('teams-updated', { lobbyId, teams: teamsList });
       }
+      // НОВЫЙ КОД: Вместо мгновенного удаления даем время на переход между страницами
+            if (Object.keys(lobby.players).length === 0) {
+                // Проверяем, есть ли игроки внутри команд этого лобби
+                const hasPlayersInTeams = Object.values(lobby.teams).some(
+                    team => Object.keys(team.players).length > 0
+                );
+                
+                if (!hasPlayersInTeams) {
+                    console.log(`Лобби ${lobbyId} пустое. Ожидаем переподключения...`);
+                    // Даем 2 минуты (120000 мс) на выбор роли, прежде чем удалять лобби
+                    setTimeout(() => {
+                        const currentLobby = gameState.lobbies[lobbyId];
+                        // Если лобби еще существует, проверяем, не зашел ли кто-то за это время
+                        if (currentLobby) {
+                            const stillEmpty = Object.keys(currentLobby.players).length === 0 && 
+                                !Object.values(currentLobby.teams).some(t => Object.keys(t.players).length > 0);
+                            
+                            if (stillEmpty) {
+                                delete gameState.lobbies[lobbyId];
+                                console.log(`Лобби ${lobbyId} окончательно удалено (по таймауту)`);
+                                broadcastLobbies();
+                                updateLeaderboard();
+                            }
+                        }
+                    }, 120000);
+                }
+            }
+      broadcastLobbies();
+      updateLeaderboard();
     }
   });
 });
 
-function getMetalInfo(metalId) {
-  const metals = [
-    { id: 1, name: 'Алый металл', color: '#FF6B6B' },
-    { id: 2, name: 'Лазурный металл', color: '#4ECDC4' },
-    { id: 3, name: 'Золотой металл', color: '#FFD166' },
-    { id: 4, name: 'Изумрудный металл', color: '#06D6A0' },
-    { id: 5, name: 'Сапфировый металл', color: '#118AB2' },
-    { id: 6, name: 'Розовый металл', color: '#EF476F' },
-    { id: 7, name: 'Темный металл', color: '#073B4C' },
-    { id: 8, name: 'Фиолетовый металл', color: '#7209B7' },
-    { id: 9, name: 'Оранжевый металл', color: '#F3722C' },
-    { id: 10, name: 'Светло-зеленый металл', color: '#90BE6D' }
-  ];
-  
-  return metals.find(m => m.id === metalId);
-}
-
-function calculateReward(quality) {
-  if (quality >= 90) return { gold: 50, exp: 100, message: "Идеальное зелье! Великолепная работа!" };
-  if (quality >= 70) return { gold: 30, exp: 70, message: "Отличное зелье! Команда работает слаженно!" };
-  if (quality >= 50) return { gold: 20, exp: 50, message: "Хорошее зелье! Продолжайте в том же духе!" };
-  return { gold: 10, exp: 30, message: "Неплохое зелье, но можно лучше!" };
-}
-
-function calculateScore(quality) {
-  if (quality >= 90) return 100;
-  if (quality >= 70) return 70;
-  if (quality >= 50) return 50;
-  return 30;
-}
-
-process.on('SIGINT', () => {
-  console.log('\n=== ОСТАНОВКА СЕРВЕРА ===');
-  server.close(() => {
-    console.log('Сервер успешно остановлен');
-    process.exit(0);
-  });
-});
-
-process.on('SIGTERM', () => {
-  console.log('\n=== ОСТАНОВКА СЕРВЕРА ===');
-  server.close(() => {
-    console.log('Сервер успешно остановлен');
-    process.exit(0);
-  });
-});
-
+// ================== ЗАПУСК СЕРВЕРА ==================
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 server.listen(PORT, HOST, () => {
   const networkIPs = getNetworkIP();
-  
   console.log(`\n=== СЕРВЕР ЗАПУЩЕН ===`);
   console.log(`Порт: ${PORT}`);
   console.log(`Режим: ${process.env.NODE_ENV || 'development'}`);
   console.log(`\n📱 ДОСТУПНЫЕ АДРЕСА:`);
   console.log(`📍 Локальный: http://localhost:${PORT}`);
-  
-  networkIPs.forEach(ip => {
-    console.log(`🌐 Сетевой: http://${ip}:${PORT}`);
-  });
-  
+  networkIPs.forEach(ip => console.log(`🌐 Сетевой: http://${ip}:${PORT}`));
   console.log(`\n🎮 СТРАНИЦЫ ИГРЫ:`);
   console.log(`🚪 Выбор команды: http://localhost:${PORT}/room-selection`);
   console.log(`🏆 Рейтинг команд: http://localhost:${PORT}/leaderboard`);
@@ -1040,18 +1081,9 @@ server.listen(PORT, HOST, () => {
   console.log(`🌿 Игрок 2 (Собиратель Ингредиентов): /player2/:roomId`);
   console.log(`🧪 Игрок 3 (Зельевар): /player3/:roomId`);
   console.log(`⛏️  Игрок 4 (Шахтер): /player4/:roomId`);
-  
-  console.log(`\n📊 КОМАНДЫ:`);
-  console.log(`Всего доступно: ${MAX_ROOMS} команд`);
-  console.log(`Базовая инициализация: ${MIN_ROOMS} команд`);
-  console.log(`Игроков в команде: ${MAX_PLAYERS_PER_ROOM}`);
-  
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`\n🔄 ПЕРЕЗАПУСК:`);
-    console.log(`Для перезапуска отправьте POST запрос на /restart`);
-    console.log(`Или используйте Ctrl+C для остановки`);
-  }
-  
+  console.log(`\n📊 КОМАНДЫ И ЛОББИ:`);
+  console.log(`Новая структура: лобби (лаборатории) содержат команды.`);
+  console.log(`Макс игроков в команде: ${MAX_PLAYERS_PER_TEAM}`);
   console.log(`\n========================\n`);
 });
 
