@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Выбор команды - Экспериментариум</title>
     <style>
-        /* ========== БАЗОВЫЕ СТИЛИ (ПОЛНОСТЬЮ ВАШИ) ========== */
+        /* ========== ГЛОБАЛЬНЫЙ ЗАПРЕТ ВЫДЕЛЕНИЯ ========== */
         * {
             margin: 0;
             padding: 0;
@@ -37,7 +37,6 @@
             padding: 20px;
             color: #fff;
             overflow-x: hidden;
-            transition: background 0.2s ease, color 0.2s ease;
         }
 
         body::before {
@@ -163,7 +162,7 @@
             z-index: 10;
         }
 
-        .create-btn, .refresh-btn {
+        .create-btn, .refresh-btn, .back-btn {
             padding: 16px 32px;
             border: none;
             border-radius: 12px;
@@ -209,7 +208,19 @@
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
         }
 
-        .rooms-container {
+        .back-btn {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            color: white;
+            box-shadow: 0 6px 20px rgba(107, 114, 128, 0.4);
+        }
+
+        .back-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 12px 30px rgba(107, 114, 128, 0.6);
+            background: linear-gradient(135deg, #4b5563 0%, #374151 100%);
+        }
+
+        .rooms-container, .teams-container {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 25px;
@@ -219,7 +230,7 @@
             z-index: 10;
         }
 
-        .room-card {
+        .room-card, .team-card {
             background: linear-gradient(145deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
             border-radius: 20px;
             padding: 25px;
@@ -232,7 +243,7 @@
             overflow: hidden;
         }
 
-        .room-card::before {
+        .room-card::before, .team-card::before {
             content: '';
             position: absolute;
             top: 0;
@@ -242,40 +253,40 @@
             background: linear-gradient(90deg, #3b82f6, #10b981, #8b5cf6);
         }
 
-        .room-card:hover {
+        .room-card:hover, .team-card:hover {
             transform: translateY(-10px) scale(1.03);
             border-color: #3b82f6;
             box-shadow: 0 20px 50px rgba(59, 130, 246, 0.4);
         }
 
-        .room-card.disabled {
+        .room-card.disabled, .team-card.disabled {
             opacity: 0.7;
             cursor: not-allowed;
             border-color: rgba(148, 163, 184, 0.3);
         }
 
-        .room-card.disabled:hover {
+        .room-card.disabled:hover, .team-card.disabled:hover {
             transform: none;
             border-color: rgba(148, 163, 184, 0.3);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
-        .room-card.completed {
+        .room-card.completed, .team-card.completed {
             border-color: #10b981;
         }
 
-        .room-card.completed::before {
+        .room-card.completed::before, .team-card.completed::before {
             background: linear-gradient(90deg, #10b981, #34d399);
         }
 
-        .room-header {
+        .room-header, .team-header {
             display: flex;
             align-items: center;
             gap: 15px;
             margin-bottom: 20px;
         }
 
-        .room-icon {
+        .room-icon, .team-icon {
             width: 60px;
             height: 60px;
             background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
@@ -287,16 +298,16 @@
             border: 2px solid rgba(59, 130, 246, 0.4);
         }
 
-        .room-card.completed .room-icon {
+        .room-card.completed .room-icon, .team-card.completed .team-icon {
             background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(52, 211, 153, 0.2));
             border-color: rgba(16, 185, 129, 0.4);
         }
 
-        .room-info {
+        .room-info, .team-info {
             flex: 1;
         }
 
-        .room-name {
+        .room-name, .team-name {
             font-size: 1.3rem;
             font-weight: 700;
             color: #f1f5f9;
@@ -304,14 +315,14 @@
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
 
-        .room-id {
+        .room-id, .team-id {
             font-size: 0.85rem;
             color: #94a3b8;
             font-family: 'JetBrains Mono', monospace;
             letter-spacing: 0.5px;
         }
 
-        .room-status {
+        .room-status, .team-status {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -461,23 +472,13 @@
             z-index: -1;
         }
 
-        .floating-element:nth-child(1) {
-            top: 10%;
-            left: 5%;
-            animation-delay: 0s;
-        }
-
+        .floating-element:nth-child(1) { top: 10%; left: 5%; animation-delay: 0s; }
         .floating-element:nth-child(2) {
-            top: 70%;
-            right: 10%;
-            animation-delay: -2s;
+            top: 70%; right: 10%; animation-delay: -2s;
             background: radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.15), transparent 70%);
         }
-
         .floating-element:nth-child(3) {
-            bottom: 20%;
-            left: 15%;
-            animation-delay: -4s;
+            bottom: 20%; left: 15%; animation-delay: -4s;
             background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.15), transparent 70%);
         }
 
@@ -486,349 +487,76 @@
             50% { transform: translateY(-20px) rotate(180deg); }
         }
 
-        /* ========== СТИЛИ ОБУЧЕНИЯ (ВАШИ) ========== */
+        /* ========== СТИЛИ ОБУЧЕНИЯ ========== */
         .tutorial-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s ease;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: none; opacity: 0; transition: opacity 0.5s ease;
         }
-
-        .tutorial-overlay.active {
-            opacity: 1;
-            pointer-events: all;
-        }
-
+        .tutorial-overlay.active { opacity: 1; pointer-events: all; }
         .tutorial-backdrop {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(2px);
-            pointer-events: none;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); pointer-events: none;
         }
-
-        .tutorial-overlay.active .tutorial-backdrop {
-            pointer-events: all;
-        }
-
+        .tutorial-overlay.active .tutorial-backdrop { pointer-events: all; }
         .tutorial-character-container {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            transform: translateX(100px);
-            opacity: 0;
-            transition: all 0.5s ease 0.2s;
-            z-index: 2001;
-            pointer-events: none;
-            max-width: 400px;
+            position: absolute; bottom: 30px; right: 30px;
+            display: flex; flex-direction: column; align-items: flex-end;
+            transform: translateX(100px); opacity: 0;
+            transition: all 0.5s ease 0.2s; z-index: 2001; pointer-events: none; max-width: 400px;
         }
-
-        .tutorial-character-container.active {
-            transform: translateX(0);
-            opacity: 1;
-            pointer-events: all;
-        }
-
+        .tutorial-character-container.active { transform: translateX(0); opacity: 1; pointer-events: all; }
         .tutorial-dialogue-overlay {
             position: relative;
-            background: linear-gradient(145deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
-            border-radius: 20px;
-            padding: 20px 25px;
-            min-width: 300px;
-            max-width: 380px;
-            margin-bottom: 20px;
+            background: linear-gradient(145deg, rgba(30,41,59,0.95), rgba(15,23,42,0.95));
+            border-radius: 20px; padding: 20px 25px;
+            min-width: 300px; max-width: 380px; margin-bottom: 20px;
             border: 2px solid #3b82f6;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            transform: translateY(20px);
-            opacity: 0;
-            transition: all 0.4s ease 0.1s;
-            color: #f1f5f9;
-            border-left: 6px solid #3b82f6;
-            pointer-events: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transform: translateY(20px); opacity: 0;
+            transition: all 0.4s ease 0.1s; color: #f1f5f9; border-left: 6px solid #3b82f6; pointer-events: none;
         }
-
-        .tutorial-dialogue-overlay.active {
-            transform: translateY(0);
-            opacity: 1;
-        }
-
+        .tutorial-dialogue-overlay.active { transform: translateY(0); opacity: 1; }
         .tutorial-dialogue-overlay::after {
-            content: '';
-            position: absolute;
-            bottom: -15px;
-            right: 40px;
-            width: 0;
-            height: 0;
-            border-left: 15px solid transparent;
-            border-right: 15px solid transparent;
-            border-top: 15px solid #3b82f6;
+            content: ''; position: absolute; bottom: -15px; right: 40px;
+            width: 0; height: 0;
+            border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 15px solid #3b82f6;
         }
-
-        #tutorialDialogueText {
-            font-size: 1.1rem;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            text-align: left;
-            word-break: break-word;
+        #tutorialDialogueText { font-size: 1.1rem; line-height: 1.5; margin-bottom: 15px; text-align: left; word-break: break-word; }
+        .tutorial-progress-bar { height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; margin-top: 10px; }
+        .tutorial-progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); width: 0%; transition: width 0.1s linear; border-radius: 3px; }
+        .tutorial-skip-btn {
+            background: rgba(0,0,0,0.5); border: 1px solid #3b82f6; color: #fff;
+            padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; cursor: pointer;
+            margin-top: 10px; display: inline-block; transition: all 0.2s ease; pointer-events: auto;
         }
-
-        .tutorial-progress-bar {
-            height: 6px;
-            background: #1e293b;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .tutorial-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #3b82f6, #10b981);
-            width: 0%;
-            transition: width 0.1s linear;
-            border-radius: 3px;
-        }
-
+        .tutorial-skip-btn:hover { background: #3b82f6; color: #fff; }
         .tutorial-character-image {
-            width: 350px;
-            height: auto;
-            object-fit: contain;
-            filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.5));
-            border: none;
-            background: none;
+            width: 350px; height: auto; object-fit: contain;
+            filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5)); border: none; background: none;
         }
-
-        /* ========== ПОРТАЛЫ: ВЫТЯНУТЫЕ ЭЛЛИПСЫ ========== */
-        .portal {
-            position: fixed;
-            width: 240px;
-            height: 420px; /* более вытянутые */
-            border-radius: 60% / 60%; /* эллиптическая форма */
-            filter: blur(8px);
-            opacity: 0;
-            pointer-events: none;
-            z-index: 5;
-            transition: opacity 0.2s, filter 0.2s, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5) 0%, transparent 80%);
-            box-shadow: 0 0 50px currentColor;
-            visibility: hidden;
-        }
-
-        .portal-blue {
-            top: 5%;
-            left: 2%;
-            background: radial-gradient(circle at 40% 40%, #3b82f6, #1e3a8a);
-            color: #3b82f6;
-        }
-
-        .portal-orange {
-            bottom: 5%;
-            right: 2%;
-            background: radial-gradient(circle at 60% 60%, #f97316, #c2410c);
-            color: #f97316;
-        }
-
-        /* Курсор внутри портала – настоящая стрелка */
-        .portal-cursor {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpolygon points='2,2 30,12 20,14 26,26 18,20 16,28 12,18 2,2' fill='white' stroke='black' stroke-width='1.5'/%3E%3C/svg%3E");
-            background-size: contain;
-            background-repeat: no-repeat;
-            filter: blur(2px) drop-shadow(0 0 6px rgba(0,0,0,0.7));
-            opacity: 0;
-            transform: translate(-50%, -50%); /* центрируем по hotspot (остриё в 0,0) */
-            pointer-events: none;
-            transition: opacity 0.15s;
-            z-index: 6;
-            left: 0;
-            top: 0;
-        }
-
-        .portal.show-cursor .portal-cursor {
-            opacity: 0.95;
-        }
-
-        /* ========== APERTURE MODE – ВКЛЮЧЕНИЕ ПОРТАЛОВ И ПЕРЕОПРЕДЕЛЕНИЕ СТИЛЕЙ ========== */
-        .aperture-mode .portal {
-            opacity: 0.8;
-            pointer-events: auto;
-            visibility: visible;
-        }
-
-        .aperture-mode .portal-blue {
-            box-shadow: 0 0 80px #00B3FF;
-        }
-
-        .aperture-mode .portal-orange {
-            box-shadow: 0 0 80px #FF7F2A;
-        }
-
-        /* Стили Aperture для остальных элементов */
-        .aperture-mode {
-            font-family: 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
-            background: #FFFFFF;
-            color: #1A1E24;
-        }
-
-        .aperture-mode .header h1 {
-            font-family: 'Cooper Black', 'Cooper', 'Georgia', serif;
-            font-size: 3.4rem;
-            font-weight: 900;
-            background: none;
-            -webkit-text-fill-color: #1A1E24;
-            color: #1A1E24;
-            text-shadow: none;
-            text-transform: uppercase;
-        }
-
-        .aperture-mode .header p {
-            color: #2D3A4A;
-        }
-
-        .aperture-mode .header::after {
-            background: #00B3FF;
-            border-radius: 0;
-        }
-
-        .aperture-mode .science-grid {
-            background-image: 
-                linear-gradient(rgba(0, 179, 255, 0.08) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 179, 255, 0.08) 1px, transparent 1px);
-        }
-
-        /* Полная отмена скруглений */
-        .aperture-mode .room-card,
-        .aperture-mode .stat-item,
-        .aperture-mode .create-btn,
-        .aperture-mode .refresh-btn,
-        .aperture-mode .btn,
-        .aperture-mode .tutorial-dialogue-overlay,
-        .aperture-mode .completed-badge,
-        .aperture-mode .room-icon,
-        .aperture-mode .room-status,
-        .aperture-mode .tutorial-progress-bar,
-        .aperture-mode .tutorial-progress-fill,
-        .aperture-mode .header::after {
-            border-radius: 0 !important;
-        }
-
-        .aperture-mode .room-card {
-            background: #FFFFFF;
-            border: 3px solid #1A1E24;
-            box-shadow: none;
-            backdrop-filter: none;
-            color: #1A1E24;
-        }
-
-        .aperture-mode .room-card::before {
-            background: #00B3FF;
-            height: 6px;
-        }
-
-        .aperture-mode .room-name {
-            color: #1A1E24;
-            text-shadow: none;
-        }
-
-        .aperture-mode .room-icon {
-            background: #EAF2F8;
-            border: 2px solid #1A1E24;
-        }
-
-        .aperture-mode .players-count {
-            color: #00A8E8;
-        }
-
-        .aperture-mode .stat-item {
-            background: #FFFFFF;
-            border: 3px solid #1A1E24;
-            backdrop-filter: none;
-            box-shadow: none;
-        }
-
-        .aperture-mode .create-btn,
-        .aperture-mode .refresh-btn,
-        .aperture-mode .btn {
-            background: #FFFFFF;
-            color: #1A1E24;
-            border: 3px solid #1A1E24;
-            box-shadow: none;
-        }
-
-        .aperture-mode .create-btn {
-            border-color: #00B3FF;
-            color: #00B3FF;
-        }
-
-        .aperture-mode .refresh-btn {
-            border-color: #FF7F2A;
-            color: #FF7F2A;
-        }
-
-        .aperture-mode .tutorial-dialogue-overlay {
-            background: #FFFFFF;
-            border: 3px solid #1A1E24;
-            border-left: 6px solid #00B3FF;
-            color: #1A1E24;
-        }
-
-        .aperture-mode .tutorial-progress-fill {
-            background: #00B3FF;
-        }
-
-        .aperture-mode .floating-element {
-            display: none;
-        }
+        .hidden { display: none !important; }
 
         @media (max-width: 900px) {
-            .portal { width: 200px; height: 350px; }
+            .rooms-container, .teams-container { grid-template-columns: repeat(2, 1fr); }
+            .tutorial-character-image { width: 250px; }
         }
         @media (max-width: 600px) {
-            .portal { width: 140px; height: 240px; }
+            .rooms-container, .teams-container { grid-template-columns: 1fr; }
+            .tutorial-character-image { width: 180px; }
         }
     </style>
-    <!-- Дополнительные шрифты для Aperture Mode -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.cdnfonts.com/css/cooper-black" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Парящие элементы -->
     <div class="floating-element"></div>
     <div class="floating-element"></div>
     <div class="floating-element"></div>
-    
-    <!-- Научная сетка -->
     <div class="science-grid"></div>
 
-    <!-- ========== ПОРТАЛЫ (СКРЫТЫ, ПОЯВЛЯЮТСЯ ТОЛЬКО В APERTURE MODE) ========== -->
-    <div class="portal portal-blue" id="portalBlue">
-        <div class="portal-cursor" id="cursorBlue"></div>
-    </div>
-    <div class="portal portal-orange" id="portalOrange">
-        <div class="portal-cursor" id="cursorOrange"></div>
-    </div>
-
-    <!-- ОБУЧЕНИЕ -->
+    <!-- ========== ОБУЧЕНИЕ (ПЕРСОНАЖ) ========== -->
     <div class="tutorial-overlay" id="tutorialOverlay">
         <div class="tutorial-backdrop"></div>
         <div class="tutorial-character-container" id="tutorialCharacterContainer">
@@ -837,8 +565,10 @@
                 <div class="tutorial-progress-bar">
                     <div class="tutorial-progress-fill" id="tutorialProgressFill"></div>
                 </div>
+                <div class="tutorial-skip-btn" id="tutorialSkipBtn">Пропустить обучение</div>
             </div>
-            <img id="tutorialCharacterImage" src="images/stage1.png" alt="Профессор Химикус" class="tutorial-character-image">
+            <img id="tutorialCharacterImage" src="images/stage1.png" alt="Профессор Химикус" class="tutorial-character-image"
+                onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\' viewBox=\'0 0 200 200\'%3E%3Crect width=\'200\' height=\'200\' fill=\'%233b82f6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'white\' font-size=\'40\'%3E🧪%3C/text%3E%3C/svg%3E'">
         </div>
     </div>
 
@@ -849,12 +579,12 @@
 
     <div class="stats-bar" id="statsBar">
         <div class="stat-item">
-            <div class="stat-value" id="totalRooms">0</div>
-            <div class="stat-label">Команд</div>
+            <div class="stat-value" id="totalLobbies">0</div>
+            <div class="stat-label">Лабораторий</div>
         </div>
         <div class="stat-item">
-            <div class="stat-value" id="activeRooms">0</div>
-            <div class="stat-label">Активно</div>
+            <div class="stat-value" id="activeLobbies">0</div>
+            <div class="stat-label">Активных</div>
         </div>
         <div class="stat-item">
             <div class="stat-value" id="totalPlayers">0</div>
@@ -862,20 +592,23 @@
         </div>
     </div>
 
-    <div class="controls">
-        <button class="create-btn" id="createRoomBtn">
+    <div class="controls" id="controls">
+        <button class="create-btn" id="createLobbyBtn">
             <span>⚗️</span>
-            Новая команда
+            Создать лабораторию
         </button>
-        <button class="refresh-btn" id="refreshRoomsBtn">
+        <button class="refresh-btn" id="refreshLobbiesBtn">
             <span>🌀</span>
             Обновить
         </button>
+        <button class="back-btn hidden" id="backToLobbiesBtn">
+            <span>←</span>
+            К лабораториям
+        </button>
     </div>
 
-    <div class="rooms-container" id="roomsContainer">
-        <div class="loading">Загрузка лабораторий...</div>
-    </div>
+    <div id="lobbiesView" class="rooms-container"></div>
+    <div id="teamsView" class="teams-container hidden"></div>
 
     <div class="navigation">
         <a href="/leaderboard" class="btn">🏆 Таблица лидеров</a>
@@ -883,27 +616,26 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Ваши существующие защиты
-        document.addEventListener('selectstart', function(e) { e.preventDefault(); return false; });
-        document.addEventListener('contextmenu', function(e) {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            e.preventDefault(); return false;
+        // Защита от выделения
+        document.addEventListener('selectstart', (e) => e.preventDefault());
+        document.addEventListener('contextmenu', (e) => {
+            if (!['INPUT', 'TEXTAREA'].includes(e.target.tagName)) e.preventDefault();
         });
-        document.addEventListener('dragstart', function(e) {
-            if (e.target.tagName === 'IMG') { e.preventDefault(); return false; }
+        document.addEventListener('dragstart', (e) => {
+            if (e.target.tagName === 'IMG') e.preventDefault();
         });
 
-        // ========== СИСТЕМА ОБУЧЕНИЯ (ДОПОЛНЕНА ПОДДЕРЖКОЙ APERTURE) ==========
+        // ========== ОБУЧЕНИЕ (персонаж появляется всегда, кнопка пропуска закрывает окно без сохранения) ==========
         class RoomTutorial {
             constructor() {
                 this.stages = [
                     {
-                        dialogue: "Добро пожаловать, меня зовут Амалия, я главный ученый лабораторного комплекса «Экспериментариум»",
+                        dialogue: "Добро пожаловать, меня зовут Амалия, я главный ученый лабораторного комплекса «Экспериментариум». Здесь вы сможете создать свою лабораторию или присоединиться к существующей.",
                         image: "images/stage1.png",
                         duration: 10000
                     },
                     {
-                        dialogue: "Сперва вам с друзьями (до 3 игроков) необходимо сообща договориться, какую команду выбрать. Нажмите на свободную лабораторию, чтобы присоединиться или создайте новую.",
+                        dialogue: "Сначала создайте лабораторию. Внутри неё вы увидите три стандартные команды, а также сможете создавать новые. Присоединяйтесь к команде, чтобы начать эксперимент!",
                         image: "images/stage3pl3.png",
                         duration: 15000
                     }
@@ -917,10 +649,12 @@
                 this.dialogueText = document.getElementById('tutorialDialogueText');
                 this.progressFill = document.getElementById('tutorialProgressFill');
                 this.characterImage = document.getElementById('tutorialCharacterImage');
-                this.originalDialogue = this.stages[0].dialogue;
+                this.skipBtn = document.getElementById('tutorialSkipBtn');
+                this.skipBtn.addEventListener('click', () => this.complete());
             }
 
             start() {
+                // Персонаж появляется всегда (убираем проверку localStorage)
                 this.isActive = true;
                 this.overlay.classList.add('active');
                 this.showStage(0);
@@ -935,7 +669,9 @@
                 this.dialogueText.textContent = stage.dialogue;
                 if (stage.image) {
                     this.characterImage.src = stage.image;
-                    this.characterImage.onerror = () => console.warn(`Не удалось загрузить: ${stage.image}`);
+                    this.characterImage.onerror = () => {
+                        this.characterImage.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\' viewBox=\'0 0 200 200\'%3E%3Crect width=\'200\' height=\'200\' fill=\'%233b82f6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' fill=\'white\' font-size=\'40\'%3E🧪%3C/text%3E%3C/svg%3E';
+                    };
                 }
                 setTimeout(() => this.characterContainer.classList.add('active'), 100);
                 setTimeout(() => this.dialogue.classList.add('active'), 300);
@@ -962,33 +698,24 @@
                 this.dialogue.classList.remove('active');
                 this.characterContainer.classList.remove('active');
                 setTimeout(() => this.overlay.classList.remove('active'), 500);
-            }
-
-            // Переключение режима Aperture в реплике
-            setApertureMode(enable) {
-                if (enable) {
-                    this.stages[0].dialogue = this.originalDialogue.replace('Экспериментариум', 'Aperture Science');
-                    if (this.isActive && this.currentStage === 0) {
-                        this.dialogueText.textContent = this.stages[0].dialogue;
-                    }
-                } else {
-                    this.stages[0].dialogue = this.originalDialogue;
-                    if (this.isActive && this.currentStage === 0) {
-                        this.dialogueText.textContent = this.originalDialogue;
-                    }
-                }
+                // НЕ сохраняем флаг в localStorage, чтобы персонаж появлялся при каждой загрузке страницы
             }
         }
 
         // ========== ОСНОВНАЯ ЛОГИКА ==========
         const socket = io();
-        const roomsContainer = document.getElementById('roomsContainer');
-        const createRoomBtn = document.getElementById('createRoomBtn');
-        const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
-        const totalRoomsEl = document.getElementById('totalRooms');
-        const activeRoomsEl = document.getElementById('activeRooms');
+        const lobbiesContainer = document.getElementById('lobbiesView');
+        const teamsContainer = document.getElementById('teamsView');
+        const createLobbyBtn = document.getElementById('createLobbyBtn');
+        const refreshLobbiesBtn = document.getElementById('refreshLobbiesBtn');
+        const backToLobbiesBtn = document.getElementById('backToLobbiesBtn');
+        const totalLobbiesEl = document.getElementById('totalLobbies');
+        const activeLobbiesEl = document.getElementById('activeLobbies');
         const totalPlayersEl = document.getElementById('totalPlayers');
-        let allRooms = [];
+
+        let currentMode = 'lobbies';
+        let currentLobbyId = null;
+        let allLobbies = [];
 
         function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
@@ -998,148 +725,193 @@
             setTimeout(() => notification.remove(), 3000);
         }
 
-        socket.emit('get-rooms');
-        socket.on('rooms-list', (rooms) => { allRooms = rooms; updateRoomsDisplay(rooms); updateStats(rooms); });
-        socket.on('rooms-updated', (rooms) => { allRooms = rooms; updateRoomsDisplay(rooms); updateStats(rooms); });
-
-        function updateStats(rooms) {
-            totalRoomsEl.textContent = rooms.length;
-            activeRoomsEl.textContent = rooms.filter(r => r.playersCount > 0).length;
-            totalPlayersEl.textContent = rooms.reduce((sum, r) => sum + r.playersCount, 0);
+        function updateStats(lobbies) {
+            totalLobbiesEl.textContent = lobbies.length;
+            activeLobbiesEl.textContent = lobbies.filter(l => l.playersCount > 0).length;
+            totalPlayersEl.textContent = lobbies.reduce((sum, l) => sum + l.playersCount, 0);
         }
 
-        function updateRoomsDisplay(rooms) {
-            roomsContainer.innerHTML = '';
-            if (rooms.length === 0) {
-                roomsContainer.innerHTML = `<div class="empty-message">🧪 Лаборатории пусты...<br>Создайте первую команду!</div>`;
+        function renderLobbies(lobbies) {
+            lobbiesContainer.innerHTML = '';
+            if (lobbies.length === 0) {
+                lobbiesContainer.innerHTML = `<div class="empty-message">🧪 Лаборатории пусты...<br>Создайте первую лабораторию!</div>`;
                 return;
             }
-            rooms.forEach(room => {
-                const roomCard = document.createElement('div');
-                roomCard.className = `room-card ${room.playersCount >= room.maxPlayers || room.completed ? 'disabled' : ''} ${room.completed ? 'completed' : ''}`;
-                const icons = ['⚗️', '🧪', '🔬', '⚡', '🔥', '💧', '🌪️', '💫'];
+            const icons = ['⚗️', '🧪', '🔬', '⚡', '🔥', '💧', '🌪️', '💫'];
+            lobbies.forEach(lobby => {
+                const lobbyCard = document.createElement('div');
+                lobbyCard.className = 'room-card';
                 const randomIcon = icons[Math.floor(Math.random() * icons.length)];
-                roomCard.innerHTML = `
+                lobbyCard.innerHTML = `
                     <div class="room-header">
-                        <div class="room-icon">${room.icon || randomIcon}</div>
+                        <div class="room-icon">${lobby.icon || randomIcon}</div>
                         <div class="room-info">
-                            <div class="room-name">${room.name}</div>
-                            <div class="room-id">Лаб. #${room.id.substring(0, 6)}</div>
+                            <div class="room-name">${lobby.name}</div>
+                            <div class="room-id">Лаб. #${lobby.id.substring(0, 6)}</div>
                         </div>
                     </div>
                     <div class="room-status">
-                        <div class="players-count"><span>👥</span> ${room.playersCount}/${room.maxPlayers} участников</div>
+                        <div class="players-count"><span>👥</span> ${lobby.playersCount} участников</div>
                     </div>
-                    ${room.completed ? '<div class="completed-badge">ЭКСПЕРИМЕНТ ЗАВЕРШЁН</div>' : ''}
                 `;
-                if (room.playersCount < room.maxPlayers && !room.completed) {
-                    roomCard.addEventListener('click', () => { window.location.href = `/role-selection/${room.id}`; });
-                }
-                roomsContainer.appendChild(roomCard);
+                lobbyCard.addEventListener('click', () => joinLobby(lobby.id));
+                lobbiesContainer.appendChild(lobbyCard);
             });
         }
 
-        createRoomBtn.addEventListener('click', () => {
-            createRoomBtn.disabled = true;
-            socket.emit('create-room', (response) => {
-                if (response.success) showNotification(`🏗️ Лаборатория "${response.roomName}" создана!`, 'success');
-                else showNotification(`⚠️ ${response.message}`, 'error');
-                createRoomBtn.disabled = false;
-            });
-        });
-
-        refreshRoomsBtn.addEventListener('click', () => { socket.emit('get-rooms'); showNotification('🌀 Список лабораторий обновлён', 'success'); });
-        setInterval(() => socket.emit('get-rooms'), 5000);
-
-        // ========== ЛОГИКА ПОРТАЛОВ С ГОРИЗОНТАЛЬНЫМ ОТРАЖЕНИЕМ ==========
-        const portalBlue = document.getElementById('portalBlue');
-        const portalOrange = document.getElementById('portalOrange');
-        const cursorBlue = document.getElementById('cursorBlue');
-        const cursorOrange = document.getElementById('cursorOrange');
-
-        // Функция обновления позиции курсора в портале-получателе с инверсией по X
-        function updateCursorPosition(e, sourcePortal, targetPortal, targetCursor) {
-            if (!sourcePortal || !targetPortal || !targetCursor) return;
-            if (!targetPortal.classList.contains('show-cursor')) return;
-
-            const sourceRect = sourcePortal.getBoundingClientRect();
-            const targetRect = targetPortal.getBoundingClientRect();
-
-            // Относительные координаты мыши внутри исходного портала (0..1)
-            let relX = (e.clientX - sourceRect.left) / sourceRect.width;
-            let relY = (e.clientY - sourceRect.top) / sourceRect.height;
-
-            // Ограничиваем от 0 до 1, чтобы курсор не уходил за края
-            relX = Math.min(1, Math.max(0, relX));
-            relY = Math.min(1, Math.max(0, relY));
-
-            // ГОРИЗОНТАЛЬНАЯ ИНВЕРСИЯ: зеркалим по X
-            const invertedX = 1 - relX;
-            // Вертикаль не инвертируем
-            const finalX = invertedX;
-            const finalY = relY;
-
-            // Вычисляем абсолютные координаты внутри целевого портала
-            const cursorX = finalX * targetRect.width;
-            const cursorY = finalY * targetRect.height;
-
-            // Устанавливаем позицию (transform: translate(-50%, -50%) уже есть в CSS)
-            targetCursor.style.left = cursorX + 'px';
-            targetCursor.style.top = cursorY + 'px';
-        }
-
-        // Обработчики наведения
-        portalBlue.addEventListener('mouseenter', () => {
-            portalOrange.classList.add('show-cursor');
-        });
-        portalBlue.addEventListener('mousemove', (e) => {
-            updateCursorPosition(e, portalBlue, portalOrange, cursorOrange);
-        });
-        portalBlue.addEventListener('mouseleave', () => {
-            portalOrange.classList.remove('show-cursor');
-        });
-
-        portalOrange.addEventListener('mouseenter', () => {
-            portalBlue.classList.add('show-cursor');
-        });
-        portalOrange.addEventListener('mousemove', (e) => {
-            updateCursorPosition(e, portalOrange, portalBlue, cursorBlue);
-        });
-        portalOrange.addEventListener('mouseleave', () => {
-            portalBlue.classList.remove('show-cursor');
-        });
-
-        // ========== ПЕРЕКЛЮЧЕНИЕ APERTURE MODE ПО H/Р ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            const tutorial = new RoomTutorial();
-            tutorial.start();
-
-            const mainTitle = document.getElementById('mainTitle');
-            const originalTitle = 'Экспериментариум';
-            let isApertureMode = false;
-
-            function toggleApertureMode(enable) {
-                if (enable) {
-                    document.body.classList.add('aperture-mode');
-                    mainTitle.textContent = 'Aperture Laboratories';
-                } else {
-                    document.body.classList.remove('aperture-mode');
-                    mainTitle.textContent = originalTitle;
-                    // Скрываем курсоры при выходе из режима
-                    portalBlue.classList.remove('show-cursor');
-                    portalOrange.classList.remove('show-cursor');
-                }
-                tutorial.setApertureMode(enable);
+        function renderTeams(teams) {
+            teamsContainer.innerHTML = '';
+            if (!teams || teams.length === 0) {
+                teamsContainer.innerHTML = `<div class="empty-message">🤝 В этой лаборатории пока нет команд.</div>`;
+                return;
             }
+            const icons = ['🐉', '🦅', '🦄', '🔬', '⚡', '🔥', '🌪️', '💫'];
+            teams.forEach(team => {
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-card';
+                teamCard.innerHTML = `
+                    <div class="team-header">
+                        <div class="team-icon">${team.icon || icons[Math.floor(Math.random() * icons.length)]}</div>
+                        <div class="team-info">
+                            <div class="team-name">${team.name}</div>
+                            <div class="team-id">Команда #${team.id.substring(0, 6)}</div>
+                        </div>
+                    </div>
+                    <div class="team-status">
+                        <div class="players-count"><span>👥</span> ${team.playersCount || 0} участников</div>
+                    </div>
+                `;
+                teamCard.addEventListener('click', () => {
+                    const url = `/role-selection/${team.id}?lobbyId=${currentLobbyId}`;
+                    window.location.href = url;
+                });
+                teamsContainer.appendChild(teamCard);
+            });
 
-            window.addEventListener('keydown', (e) => {
-                if (e.key === 'p' || e.key === 'P' || e.key === 'з' || e.key === 'З') {
-                    e.preventDefault();
-                    isApertureMode = !isApertureMode;
-                    toggleApertureMode(isApertureMode);
+            // Кнопка создания новой команды (без промпта)
+            const createTeamBtn = document.createElement('div');
+            createTeamBtn.className = 'team-card';
+            createTeamBtn.style.borderColor = 'rgba(139, 92, 246, 0.4)';
+            createTeamBtn.innerHTML = `
+                <div class="team-header">
+                    <div class="team-icon" style="background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(109,40,217,0.2)); border-color: rgba(139,92,246,0.4);">➕</div>
+                    <div class="team-info">
+                        <div class="team-name">Добавить команду</div>
+                        <div class="team-id">Нажмите для создания</div>
+                    </div>
+                </div>
+            `;
+            createTeamBtn.addEventListener('click', () => createTeam(teams.length));
+            teamsContainer.appendChild(createTeamBtn);
+        }
+
+        function createLobby() {
+            createLobbyBtn.disabled = true;
+            socket.emit('create-lobby', (response) => {
+                if (response.success) {
+                    showNotification(`🏢 Лаборатория "${response.lobbyName}" создана!`, 'success');
+                    joinLobby(response.lobbyId);
+                } else {
+                    showNotification(`⚠️ ${response.message}`, 'error');
+                }
+                createLobbyBtn.disabled = false;
+            });
+        }
+
+        function joinLobby(lobbyId) {
+            socket.emit('join-lobby', { lobbyId }, (response) => {
+                if (response.success) {
+                    currentLobbyId = lobbyId;
+                    currentMode = 'teams';
+                    lobbiesContainer.classList.add('hidden');
+                    teamsContainer.classList.remove('hidden');
+                    backToLobbiesBtn.classList.remove('hidden');
+                    createLobbyBtn.classList.add('hidden');
+                    refreshLobbiesBtn.classList.add('hidden');
+                    renderTeams(response.teams || []);
+                    showNotification('Вы вошли в лабораторию.', 'success');
+                } else {
+                    showNotification(`Не удалось войти: ${response.message}`, 'error');
                 }
             });
+        }
+
+        // Создаёт команду с автоматическим названием — промпт убран
+        function createTeam(currentCount) {
+            if (!currentLobbyId) return;
+            const teamName = `Команда ${(currentCount || 0) + 1}`;
+            socket.emit('create-team', { lobbyId: currentLobbyId, teamName }, (response) => {
+                if (response.success) {
+                    showNotification(`✅ "${teamName}" создана!`, 'success');
+                    refreshTeams();
+                } else {
+                    showNotification(`Ошибка: ${response.message}`, 'error');
+                }
+            });
+        }
+
+        function refreshTeams() {
+            if (currentLobbyId) {
+                socket.emit('get-teams', { lobbyId: currentLobbyId }, (response) => {
+                    if (response.success) renderTeams(response.teams);
+                });
+            }
+        }
+
+        function backToLobbies() {
+            currentMode = 'lobbies';
+            currentLobbyId = null;
+            lobbiesContainer.classList.remove('hidden');
+            teamsContainer.classList.add('hidden');
+            backToLobbiesBtn.classList.add('hidden');
+            createLobbyBtn.classList.remove('hidden');
+            refreshLobbiesBtn.classList.remove('hidden');
+            socket.emit('get-lobbies');
+            sessionStorage.removeItem('currentLobbyId');
+            sessionStorage.removeItem('selectedTeamId');
+        }
+
+        socket.on('lobbies-list', (lobbies) => {
+            allLobbies = lobbies;
+            if (currentMode === 'lobbies') renderLobbies(lobbies);
+            updateStats(lobbies);
         });
+
+        socket.on('lobbies-updated', (lobbies) => {
+            allLobbies = lobbies;
+            if (currentMode === 'lobbies') renderLobbies(lobbies);
+            updateStats(lobbies);
+        });
+
+        socket.on('teams-updated', (data) => {
+            if (currentMode === 'teams' && currentLobbyId === data.lobbyId) {
+                renderTeams(data.teams);
+            }
+        });
+
+        createLobbyBtn.addEventListener('click', createLobby);
+        refreshLobbiesBtn.addEventListener('click', () => {
+            socket.emit('get-lobbies');
+            showNotification('🌀 Список лабораторий обновлён', 'success');
+        });
+        backToLobbiesBtn.addEventListener('click', backToLobbies);
+
+        // Автообновление каждые 5 секунд
+        setInterval(() => {
+            if (currentMode === 'lobbies') {
+                socket.emit('get-lobbies');
+            } else if (currentMode === 'teams' && currentLobbyId) {
+                socket.emit('get-teams', { lobbyId: currentLobbyId }, (response) => {
+                    if (response && response.success) renderTeams(response.teams);
+                });
+            }
+        }, 5000);
+
+        // Запуск обучения (персонаж)
+        const tutorial = new RoomTutorial();
+        tutorial.start();
+
+        socket.emit('get-lobbies');
     </script>
 </body>
 </html>
