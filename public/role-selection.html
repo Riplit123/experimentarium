@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Выбор роли - Экспериментариум</title>
     <style>
+        /* ========== ВСЕ СТИЛИ ОСТАЮТСЯ БЕЗ ИЗМЕНЕНИЙ (как в исходном коде) ========== */
         * {
             margin: 0;
             padding: 0;
@@ -23,7 +24,6 @@
             overflow-x: hidden;
         }
 
-        /* Научный фон с элементами */
         body::before {
             content: '';
             position: fixed;
@@ -499,7 +499,7 @@
             50% { transform: translateY(-20px) rotate(180deg); }
         }
 
-        /* ========== ИСПРАВЛЕННЫЕ СТИЛИ ОБУЧЕНИЯ (БЛОКИРОВКА ТОЛЬКО В АКТИВНОМ СОСТОЯНИИ) ========== */
+        /* Стили обучения */
         .tutorial-overlay {
             position: fixed;
             top: 0;
@@ -511,14 +511,14 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            pointer-events: none;        /* По умолчанию не перехватывает */
+            pointer-events: none;
             opacity: 0;
             transition: opacity 0.5s ease;
         }
 
         .tutorial-overlay.active {
             opacity: 1;
-            pointer-events: all;        /* Активен — перехватывает */
+            pointer-events: all;
         }
 
         .tutorial-backdrop {
@@ -529,11 +529,11 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(2px);
-            pointer-events: none;       /* ИСПРАВЛЕНО: не перехватывает в неактивном состоянии */
+            pointer-events: none;
         }
 
         .tutorial-overlay.active .tutorial-backdrop {
-            pointer-events: all;        /* Только при активном оверлее блокирует */
+            pointer-events: all;
         }
 
         .tutorial-character-container {
@@ -547,14 +547,14 @@
             opacity: 0;
             transition: all 0.5s ease 0.2s;
             z-index: 2001;
-            pointer-events: none;       /* ИСПРАВЛЕНО */
+            pointer-events: none;
             max-width: 400px;
         }
 
         .tutorial-character-container.active {
             transform: translateX(0);
             opacity: 1;
-            pointer-events: all;       /* Активно — можно кликнуть по диалогу (но там нет кнопок) */
+            pointer-events: all;
         }
 
         .tutorial-dialogue-overlay {
@@ -572,7 +572,7 @@
             transition: all 0.4s ease 0.1s;
             color: #f1f5f9;
             border-left: 6px solid #3b82f6;
-            pointer-events: none;       /* Не мешает кликам */
+            pointer-events: none;
         }
 
         .tutorial-dialogue-overlay.active {
@@ -616,7 +616,6 @@
             border-radius: 3px;
         }
 
-        /* ИЗОБРАЖЕНИЕ ПЕРСОНАЖА – БЕЗ РАМКИ, БЕЗ ФОНА */
         .tutorial-character-image {
             width: 280px;
             height: auto;
@@ -632,18 +631,15 @@
                 grid-template-columns: repeat(2, 1fr);
                 max-width: 800px;
             }
-
             .tutorial-character-container {
                 bottom: 20px;
                 right: 20px;
                 max-width: 320px;
             }
-
             .tutorial-dialogue-overlay {
                 min-width: 260px;
                 padding: 15px 20px;
             }
-
             .tutorial-character-image {
                 width: 200px;
             }
@@ -654,46 +650,37 @@
                 grid-template-columns: 1fr;
                 max-width: 400px;
             }
-            
             .header h1 {
                 font-size: 2.5rem;
             }
-            
             .navigation {
                 flex-direction: column;
                 gap: 20px;
             }
-            
             .btn {
                 width: 100%;
                 max-width: 400px;
                 justify-content: center;
             }
-            
             .modal-buttons {
                 flex-direction: column;
                 gap: 15px;
             }
-            
             .modal-btn {
                 width: 100%;
             }
-            
             .confirmation-modal {
                 padding: 30px 25px;
                 width: 95%;
             }
-            
             .modal-icon {
                 width: 80px;
                 height: 80px;
                 font-size: 2.8rem;
             }
-            
             .modal-title {
                 font-size: 1.7rem;
             }
-
             .tutorial-character-container {
                 bottom: 15px;
                 right: 15px;
@@ -701,17 +688,14 @@
                 align-items: center;
                 max-width: 100%;
             }
-
             .tutorial-dialogue-overlay {
                 min-width: auto;
                 width: 100%;
                 max-width: 100%;
             }
-
             .tutorial-dialogue-overlay::after {
                 right: 30px;
             }
-
             .tutorial-character-image {
                 width: 160px;
             }
@@ -721,7 +705,6 @@
             .header h1 {
                 font-size: 2rem;
             }
-            
             .floating-element {
                 display: none;
             }
@@ -738,7 +721,7 @@
     <!-- Научная сетка -->
     <div class="science-grid"></div>
 
-    <!-- ========== ОБУЧЕНИЕ С ПЕРСОНАЖЕМ (ИЗОБРАЖЕНИЕ БЕЗ РАМКИ) ========== -->
+    <!-- ========== ОБУЧЕНИЕ С ПЕРСОНАЖЕМ ========== -->
     <div class="tutorial-overlay" id="tutorialOverlay">
         <div class="tutorial-backdrop"></div>
         <div class="tutorial-character-container" id="tutorialCharacterContainer">
@@ -791,343 +774,338 @@
     <script>
         // ========== СИСТЕМА ОБУЧЕНИЯ ДЛЯ СТРАНИЦЫ ВЫБОРА РОЛИ ==========
         class RoleTutorial {
-            constructor() {
-                this.stages = [
-                    {
-                        dialogue: "Теперь вы находитесь в комнате выбора роли.",
-                        image: "/images/stage1.png",
-                        duration: 6000 // 9 секунд
-                    },
-                    {
-                        dialogue: "В вашей команде три уникальные роли: Химик создаёт химикаты, Исследователь добывает компоненты, Лаборант создает и распоряжается реагентами. Выберите свободную роль и станьте частью команды!",
-                        image: "/images/stage2pl3.png",
-                        duration: 12000 // 12 секунд
-                    }
-                ];
-
-                this.currentStage = 0;
-                this.progressInterval = null;
-                this.isActive = false;
-
-                // Элементы
-                this.overlay = document.getElementById('tutorialOverlay');
-                this.characterContainer = document.getElementById('tutorialCharacterContainer');
-                this.dialogue = document.getElementById('tutorialDialogue');
-                this.dialogueText = document.getElementById('tutorialDialogueText');
-                this.progressFill = document.getElementById('tutorialProgressFill');
-                this.characterImage = document.getElementById('tutorialCharacterImage');
-            }
-
-            start() {
-                this.isActive = true;
-                this.overlay.classList.add('active');
-                this.showStage(0);
-            }
-
-            showStage(index) {
-                if (index >= this.stages.length) {
-                    this.complete();
-                    return;
-                }
-
-                this.currentStage = index;
-                const stage = this.stages[index];
-
-                // Скрываем предыдущие элементы
-                this.dialogue.classList.remove('active');
-                this.characterContainer.classList.remove('active');
-
-                // Устанавливаем текст
-                this.dialogueText.textContent = stage.dialogue;
-
-                // Устанавливаем изображение
-                if (stage.image) {
-                    this.characterImage.src = stage.image;
-                    this.characterImage.alt = `Профессор Химикус - этап ${index + 1}`;
-                    this.characterImage.onerror = () => {
-                        console.warn(`Не удалось загрузить изображение: ${stage.image}`);
-                    };
-                }
-
-                // Активируем с задержками для плавности
-                setTimeout(() => {
-                    this.characterContainer.classList.add('active');
-                }, 100);
-                setTimeout(() => {
-                    this.dialogue.classList.add('active');
-                }, 300);
-
-                // Запускаем прогресс-бар
-                this.startProgressBar(stage.duration);
-            }
-
-            startProgressBar(duration) {
-                if (this.progressInterval) {
-                    clearInterval(this.progressInterval);
-                }
-
-                let startTime = Date.now();
-                this.progressFill.style.width = '0%';
-
-                this.progressInterval = setInterval(() => {
-                    const elapsed = Date.now() - startTime;
-                    const progress = Math.min((elapsed / duration) * 100, 100);
-                    this.progressFill.style.width = `${progress}%`;
-
-                    if (elapsed >= duration) {
-                        clearInterval(this.progressInterval);
-                        this.nextStage();
-                    }
-                }, 50);
-            }
-
-            nextStage() {
-                this.showStage(this.currentStage + 1);
-            }
-
-            complete() {
-                this.isActive = false;
-                if (this.progressInterval) {
-                    clearInterval(this.progressInterval);
-                }
-
-                // Плавно скрываем элементы
-                this.dialogue.classList.remove('active');
-                this.characterContainer.classList.remove('active');
-
-                setTimeout(() => {
-                    this.overlay.classList.remove('active');
-                    // НЕ сохраняем флаг — обучение будет показываться каждый раз
-                }, 500);
-            }
-        }
-
-        // ========== ОСНОВНАЯ ЛОГИКА СТРАНИЦЫ ВЫБОРА РОЛИ ==========
-        const socket = io();
-        const pathSegments = window.location.pathname.split('/');
-        const roomId = pathSegments[pathSegments.length - 1];
-        
-        console.log('Room ID from URL:', roomId);
-        
-        const rolesContainer = document.getElementById('rolesContainer');
-        const roomInfo = document.getElementById('roomInfo');
-        const confirmationModal = document.getElementById('confirmationModal');
-        const modalRoleName = document.getElementById('modalRoleName');
-        const modalRoleDescription = document.getElementById('modalRoleDescription');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const confirmBtn = document.getElementById('confirmBtn');
-
-        let selectedRole = null;
-
-        // Запрос информации о комнате при загрузке
-        socket.emit('get-rooms');
-
-        // Обработка получения списка комнат
-        socket.on('rooms-list', (rooms) => {
-            console.log('Получены комнаты:', rooms);
-            const currentRoom = rooms.find(room => room.id === roomId);
-            if (currentRoom) {
-                updateRoomInfo(currentRoom);
-            } else {
-                showError('Команда не найдена');
-            }
-        });
-
-        // Обработка обновления комнат
-        socket.on('rooms-updated', (rooms) => {
-            console.log('Обновление комнат:', rooms);
-            const currentRoom = rooms.find(room => room.id === roomId);
-            if (currentRoom) {
-                updateRoomInfo(currentRoom);
-            }
-        });
-
-        function showError(message) {
-            rolesContainer.innerHTML = `<div class="error-message">${message}</div>`;
-            roomInfo.textContent = 'Ошибка загрузки команды';
-        }
-
-        function showConfirmationModal(role) {
-            selectedRole = role;
-            modalRoleName.textContent = role.name;
-            modalRoleDescription.textContent = role.description;
-            confirmationModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function hideConfirmationModal() {
-            confirmationModal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-            selectedRole = null;
-        }
-
-        function handleRoleConfirmation() {
-            if (selectedRole) {
-                console.log(`Выбрана роль: ${selectedRole.name}, переход на: ${selectedRole.page}/${roomId}`);
-                window.location.href = `${selectedRole.page}/${roomId}`;
-            }
-        }
-
-        // Обработчики для модального окна
-        cancelBtn.addEventListener('click', hideConfirmationModal);
-        confirmBtn.addEventListener('click', handleRoleConfirmation);
-
-        // Закрытие модального окна при клике на фон
-        confirmationModal.addEventListener('click', (e) => {
-            if (e.target === confirmationModal) {
-                hideConfirmationModal();
-            }
-        });
-
-        // Закрытие модального окна при нажатии Escape
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && confirmationModal.classList.contains('active')) {
-                hideConfirmationModal();
-            }
-        });
-
-        function updateRoomInfo(room) {
-            console.log('Обновление информации о команде:', room);
-            
-            if (room.completed) {
-                roomInfo.innerHTML = `
-                    <span style="color: #10b981; font-weight: bold;">✅ ЭКСПЕРИМЕНТ ЗАВЕРШЁН</span><br>
-                    <span style="font-size: 1rem;">Команда: ${room.name} • Игроков: ${room.playersCount || 0}/${room.maxPlayers || 4}</span>
-                `;
-            } else {
-                roomInfo.innerHTML = `
-                    <span style="color: #60a5fa; font-weight: bold;">⚗️ ${room.name}</span><br>
-                    <span style="font-size: 1rem;">Игроков: ${room.playersCount || 0}/${room.maxPlayers || 4}</span>
-                `;
-            }
-            
-            // Показываем доступные роли
-            showAvailableRoles(room);
-        }
-
-        function showAvailableRoles(room) {
-            console.log('Показ доступных ролей для комнаты:', room);
-            
-            // Определяем занятые роли
-            const takenRoles = new Set();
-            if (room.players && typeof room.players === 'object') {
-                Object.values(room.players).forEach(player => {
-                    takenRoles.add(player.playerType);
-                });
-            }
-
-            const roles = [
+        constructor() {
+            this.stages = [
                 {
-                    type: 'weightGatherer',
-                    icon: '⚗️',
-                    name: 'Химик',
-                    description: 'Синтезируйте химические вещества для реагентов',
-                    page: '/player1',
-                    tags: ['Рецепты', 'Химикаты', 'Точность']
+                    dialogue: "Теперь вы находитесь в комнате выбора роли.",
+                    image: "/images/stage1.png",
+                    duration: 6000
                 },
                 {
-                    type: 'ingredientGatherer', 
-                    icon: '🧫',
-                    name: 'Исследователь',
-                    description: 'Проводите исследования для получения компонентов',
-                    page: '/player2',
-                    tags: ['Сбор', 'Исследования', 'Анализ']
-                },
-                {
-                    type: 'potionMaker',
-                    icon: '🧪', 
-                    name: 'Лаборант',
-                    description: 'Проводите эксперименты, создавая уникальные реагенты и управляя лабораторией',
-                    page: '/player3',
-                    tags: ['Эксперименты', 'Синтез', 'Контроль']
+                    dialogue: "В вашей команде три уникальные роли: Химик создаёт химикаты, Исследователь добывает компоненты, Лаборант создает и распоряжается реагентами. Выберите свободную роль и станьте частью команды!",
+                    image: "/images/stage2pl3.png",
+                    duration: 12000
                 }
             ];
+            this.currentStage = 0;
+            this.progressInterval = null;
+            this.isActive = false;
+            this.overlay = document.getElementById('tutorialOverlay');
+            this.characterContainer = document.getElementById('tutorialCharacterContainer');
+            this.dialogue = document.getElementById('tutorialDialogue');
+            this.dialogueText = document.getElementById('tutorialDialogueText');
+            this.progressFill = document.getElementById('tutorialProgressFill');
+            this.characterImage = document.getElementById('tutorialCharacterImage');
+        }
 
-            rolesContainer.innerHTML = '';
+        start() {
+            this.isActive = true;
+            this.overlay.classList.add('active');
+            this.showStage(0);
+        }
 
-            // Проверяем, можно ли еще присоединиться
-            const totalPlayers = room.playersCount || 0;
-            const maxPlayers = room.maxPlayers || 4;
-            
-            if (room.completed) {
-                const message = document.createElement('div');
-                message.className = 'info-message';
-                message.innerHTML = `
-                    <h3 style="margin-bottom: 15px; color: #10b981;">✅ Эксперимент завершён</h3>
-                    <p style="color: #cbd5e1;">Эта команда уже завершила свой эксперимент.</p>
-                    <p style="color: #94a3b8; margin-top: 10px;">Выберите другую команду для участия.</p>
-                `;
-                rolesContainer.appendChild(message);
+        showStage(index) {
+            if (index >= this.stages.length) {
+                this.complete();
                 return;
             }
-
-            if (totalPlayers >= maxPlayers) {
-                const message = document.createElement('div');
-                message.className = 'info-message';
-                message.innerHTML = `
-                    <h3 style="margin-bottom: 15px; color: #fbbf24;">⚠️ Команда заполнена</h3>
-                    <p style="color: #cbd5e1;">Все места в команде заняты (${totalPlayers}/${maxPlayers} игроков).</p>
-                    <p style="color: #94a3b8; margin-top: 10px;">Выберите другую команду или дождитесь, когда освободится место.</p>
-                `;
-                rolesContainer.appendChild(message);
+            this.currentStage = index;
+            const stage = this.stages[index];
+            this.dialogue.classList.remove('active');
+            this.characterContainer.classList.remove('active');
+            this.dialogueText.textContent = stage.dialogue;
+            if (stage.image) {
+                this.characterImage.src = stage.image;
+                this.characterImage.onerror = () => {
+                    console.warn(`Не удалось загрузить изображение: ${stage.image}`);
+                };
             }
+            setTimeout(() => this.characterContainer.classList.add('active'), 100);
+            setTimeout(() => this.dialogue.classList.add('active'), 300);
+            this.startProgressBar(stage.duration);
+        }
 
-            roles.forEach(role => {
-                const isTaken = takenRoles.has(role.type);
-                const roleCard = document.createElement('div');
-                roleCard.className = `role-card ${isTaken ? 'taken' : 'available'}`;
-                
-                roleCard.innerHTML = `
-                    <div class="role-icon">${role.icon}</div>
-                    <div class="role-name">${role.name}</div>
-                    <div class="role-description">${role.description}</div>
-                    <div class="role-tags">
-                        ${role.tags.map(tag => `<span class="role-tag">${tag}</span>`).join('')}
-                    </div>
-                    <div class="role-status ${isTaken ? 'status-taken' : 'status-available'}">
-                        ${isTaken ? '❌ Занята' : '✅ Доступна'}
-                    </div>
-                `;
-
-                if (!isTaken && !room.completed && totalPlayers < maxPlayers) {
-                    roleCard.addEventListener('click', () => {
-                        showConfirmationModal(role);
-                    });
-                } else if (isTaken) {
-                    roleCard.title = 'Эта роль уже занята другим игроком';
+        startProgressBar(duration) {
+            if (this.progressInterval) clearInterval(this.progressInterval);
+            let startTime = Date.now();
+            this.progressFill.style.width = '0%';
+            this.progressInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min((elapsed / duration) * 100, 100);
+                this.progressFill.style.width = `${progress}%`;
+                if (elapsed >= duration) {
+                    clearInterval(this.progressInterval);
+                    this.nextStage();
                 }
+            }, 50);
+        }
 
-                rolesContainer.appendChild(roleCard);
+        nextStage() {
+            this.showStage(this.currentStage + 1);
+        }
+
+        complete() {
+            this.isActive = false;
+            if (this.progressInterval) clearInterval(this.progressInterval);
+            this.dialogue.classList.remove('active');
+            this.characterContainer.classList.remove('active');
+            setTimeout(() => this.overlay.classList.remove('active'), 500);
+        }
+    }
+
+    // ========== ОСНОВНАЯ ЛОГИКА ==========
+    const socket = io();
+
+    // Получаем teamId из URL (например, /role-selection/team_xxx_1)
+    const pathSegments = window.location.pathname.split('/');
+    const teamId = pathSegments[pathSegments.length - 1];
+
+    // Получаем lobbyId из query-параметров
+    const urlParams = new URLSearchParams(window.location.search);
+    let lobbyId = urlParams.get('lobbyId');
+    // Если в URL нет, пробуем взять из sessionStorage (для обратной совместимости)
+    if (!lobbyId) {
+        lobbyId = sessionStorage.getItem('currentLobbyId');
+    }
+    console.log('Team ID:', teamId, 'Lobby ID:', lobbyId);
+
+    const rolesContainer = document.getElementById('rolesContainer');
+    const roomInfo = document.getElementById('roomInfo');
+    const confirmationModal = document.getElementById('confirmationModal');
+    const modalRoleName = document.getElementById('modalRoleName');
+    const modalRoleDescription = document.getElementById('modalRoleDescription');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+
+    let selectedRole = null;
+    let currentTeam = null;
+
+    function showError(message) {
+        rolesContainer.innerHTML = `<div class="error-message">${message}</div>`;
+        roomInfo.innerHTML = `<div class="error-message">${message}</div>`;
+    }
+
+    function updateRoomInfo(team) {
+        if (team.completed) {
+            roomInfo.innerHTML = `
+                <span style="color: #10b981; font-weight: bold;">✅ ЭКСПЕРИМЕНТ ЗАВЕРШЁН</span><br>
+                <span style="font-size: 1rem;">Команда: ${team.name} • Игроков: ${team.playersCount || 0}/${team.maxPlayers || 4}</span>
+            `;
+        } else {
+            roomInfo.innerHTML = `
+                <span style="color: #60a5fa; font-weight: bold;">⚗️ ${team.name}</span><br>
+                <span style="font-size: 1rem;">Игроков: ${team.playersCount || 0}/${team.maxPlayers || 4}</span>
+            `;
+        }
+    }
+
+    function showAvailableRoles(team) {
+        const takenRoles = new Set();
+        if (team.players && typeof team.players === 'object') {
+            Object.values(team.players).forEach(player => {
+                takenRoles.add(player.playerType);
             });
         }
 
-        // Обработка ошибок соединения
-        socket.on('connect_error', (error) => {
-            console.error('Ошибка подключения:', error);
-            showError('Ошибка подключения к серверу');
-        });
+        const roles = [
+            {
+                type: 'weightGatherer',
+                icon: '⚗️',
+                name: 'Химик',
+                description: 'Синтезируйте химические вещества для реагентов',
+                page: '/player1',
+                tags: ['Рецепты', 'Химикаты', 'Точность']
+            },
+            {
+                type: 'ingredientGatherer', 
+                icon: '🧫',
+                name: 'Исследователь',
+                description: 'Проводите исследования для получения компонентов',
+                page: '/player2',
+                tags: ['Сбор', 'Исследования', 'Анализ']
+            },
+            {
+                type: 'potionMaker',
+                icon: '🧪', 
+                name: 'Лаборант',
+                description: 'Проводите эксперименты, создавая уникальные реагенты и управляя лабораторией',
+                page: '/player3',
+                tags: ['Эксперименты', 'Синтез', 'Контроль']
+            }
+        ];
 
-        // Обработка ошибок от сервера
-        socket.on('error', (data) => {
-            console.error('Ошибка от сервера:', data);
-            showError(data.message || 'Произошла ошибка');
-        });
+        rolesContainer.innerHTML = '';
+        const totalPlayers = team.playersCount || 0;
+        const maxPlayers = team.maxPlayers || 4;
 
-        // Периодически запрашиваем обновление комнат
-        setInterval(() => {
+        if (team.completed) {
+            const message = document.createElement('div');
+            message.className = 'info-message';
+            message.innerHTML = `
+                <h3 style="margin-bottom: 15px; color: #10b981;">✅ Эксперимент завершён</h3>
+                <p style="color: #cbd5e1;">Эта команда уже завершила свой эксперимент.</p>
+                <p style="color: #94a3b8; margin-top: 10px;">Выберите другую команду для участия.</p>
+            `;
+            rolesContainer.appendChild(message);
+            return;
+        }
+
+        if (totalPlayers >= maxPlayers) {
+            const message = document.createElement('div');
+            message.className = 'info-message';
+            message.innerHTML = `
+                <h3 style="margin-bottom: 15px; color: #fbbf24;">⚠️ Команда заполнена</h3>
+                <p style="color: #cbd5e1;">Все места в команде заняты (${totalPlayers}/${maxPlayers} игроков).</p>
+                <p style="color: #94a3b8; margin-top: 10px;">Выберите другую команду или дождитесь, когда освободится место.</p>
+            `;
+            rolesContainer.appendChild(message);
+        }
+
+        roles.forEach(role => {
+            const isTaken = takenRoles.has(role.type);
+            const roleCard = document.createElement('div');
+            roleCard.className = `role-card ${isTaken ? 'taken' : 'available'}`;
+            roleCard.innerHTML = `
+                <div class="role-icon">${role.icon}</div>
+                <div class="role-name">${role.name}</div>
+                <div class="role-description">${role.description}</div>
+                <div class="role-tags">
+                    ${role.tags.map(tag => `<span class="role-tag">${tag}</span>`).join('')}
+                </div>
+                <div class="role-status ${isTaken ? 'status-taken' : 'status-available'}">
+                    ${isTaken ? '❌ Занята' : '✅ Доступна'}
+                </div>
+            `;
+            if (!isTaken && !team.completed && totalPlayers < maxPlayers) {
+                roleCard.addEventListener('click', () => showConfirmationModal(role));
+            } else if (isTaken) {
+                roleCard.title = 'Эта роль уже занята другим игроком';
+            }
+            rolesContainer.appendChild(roleCard);
+        });
+    }
+
+    function showConfirmationModal(role) {
+        selectedRole = role;
+        modalRoleName.textContent = role.name;
+        modalRoleDescription.textContent = role.description;
+        confirmationModal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideConfirmationModal() {
+        confirmationModal.classList.remove('active');
+        document.body.style.overflow = 'auto';
+        selectedRole = null;
+    }
+
+    function handleRoleConfirmation() {
+        if (selectedRole && currentTeam) {
+            const playerName = prompt('Введите ваше имя:', 'Игрок');
+            if (!playerName) return;
+            const playerId = Math.random().toString(36).substr(2, 9);
+            const registerData = {
+                playerId,
+                playerType: selectedRole.type,
+                playerName,
+                roomId: teamId,
+                teamId: teamId,
+                lobbyId: lobbyId
+            };
+            socket.emit('register-player', registerData, (response) => {
+                if (response && response.error) {
+                    showError(response.message);
+                    hideConfirmationModal();
+                } else {
+                    window.location.href = `${selectedRole.page}/${teamId}`;
+                }
+            });
+        }
+    }
+
+    cancelBtn.addEventListener('click', hideConfirmationModal);
+    confirmBtn.addEventListener('click', handleRoleConfirmation);
+    confirmationModal.addEventListener('click', (e) => {
+        if (e.target === confirmationModal) hideConfirmationModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && confirmationModal.classList.contains('active')) hideConfirmationModal();
+    });
+
+    // === ПОЛУЧЕНИЕ ИНФОРМАЦИИ О КОМАНДЕ ===
+    // Приоритет: если есть lobbyId, используем check-team; иначе – get-rooms.
+    function fetchViaCheckTeam() {
+        if (!teamId) {
+            showError('Не указана команда');
+            return;
+        }
+        socket.emit('check-team', { teamId, lobbyId }, (response) => {
+            console.log('check-team ответ:', response);
+            if (response && response.success) {
+                currentTeam = response.team;
+                updateRoomInfo(currentTeam);
+                showAvailableRoles(currentTeam);
+            } else {
+                // Если check-team не сработал, пробуем через rooms-list
+                console.warn('check-team не удался, пробуем rooms-list');
+                socket.emit('get-rooms');
+            }
+        });
+    }
+
+    // Резервный метод через rooms-list
+    socket.on('rooms-list', (rooms) => {
+        console.log('Получен rooms-list, ищем команду:', teamId);
+        const team = rooms.find(r => r.id === teamId);
+        if (team) {
+            currentTeam = team;
+            updateRoomInfo(team);
+            showAvailableRoles(team);
+        } else {
+            showError('Команда не найдена');
+        }
+    });
+
+    socket.on('rooms-updated', (rooms) => {
+        const team = rooms.find(r => r.id === teamId);
+        if (team) {
+            currentTeam = team;
+            updateRoomInfo(team);
+            showAvailableRoles(team);
+        }
+    });
+
+    // Обработка ошибок
+    socket.on('connect_error', (error) => {
+        console.error('Ошибка подключения:', error);
+        showError('Ошибка подключения к серверу');
+    });
+
+    socket.on('error', (data) => {
+        console.error('Ошибка от сервера:', data);
+        showError(data.message || 'Произошла ошибка');
+    });
+
+    // Запускаем получение данных
+    if (lobbyId) {
+        fetchViaCheckTeam();
+    } else {
+        console.log('lobbyId отсутствует, используем get-rooms');
+        socket.emit('get-rooms');
+    }
+
+    // Периодическое обновление (на случай изменений в команде)
+    setInterval(() => {
+        if (!currentTeam) {
             socket.emit('get-rooms');
-        }, 5000);
+        }
+    }, 5000);
 
-        // При загрузке страницы сразу запрашиваем обновление
-        window.addEventListener('load', () => {
-            socket.emit('get-rooms');
-        });
-
-        // ========== ЗАПУСК ОБУЧЕНИЯ ПРИ КАЖДОЙ ЗАГРУЗКЕ ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            const tutorial = new RoleTutorial();
-            tutorial.start();
-        });
-    </script>
+    // Запуск обучения
+    document.addEventListener('DOMContentLoaded', () => {
+        const tutorial = new RoleTutorial();
+        tutorial.start();
+    });
+</script>
 </body>
 </html>
