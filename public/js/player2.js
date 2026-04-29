@@ -4,7 +4,7 @@ class TutorialSystem {
             {
                 id: 1,
                 title: "Приветствие",
-                characterImage: "images/stage1.png",
+                characterImage: "images/stage1L.png",
                 dialogue: "Добро пожаловать в исследовательскую лабораторию!",
                 mainOverlay: null,
                 duration: 8000,
@@ -13,7 +13,7 @@ class TutorialSystem {
             {
                 id: 2,
                 title: "Выбор ингредиента",
-                characterImage: "images/stage2pl2.png",
+                characterImage: "images/stage2pl2L.png",
                 dialogue: "Твоя задача - собирать три вида компонентов: Азот, Биоматериал и Углерод. Выберай один из них слева!",
                 mainOverlay: `
                     <div class="tutorial-main-content">
@@ -30,7 +30,7 @@ class TutorialSystem {
             {
                 id: 3,
                 title: "Мини-игры",
-                characterImage: "images/stage3pl3.png",
+                characterImage: "images/stage2pl2L.png",
                 dialogue: "Каждый компонент собирается по-своему!",
                 mainOverlay: `
                     <div class="tutorial-main-content">
@@ -46,7 +46,7 @@ class TutorialSystem {
             {
                 id: 4,
                 title: "Атаки и защита",
-                characterImage: "images/stage2pl3.png",
+                characterImage: "images/stage2pl2L.png",
                 dialogue: "Другие команды могут атаковать вас, блокируя компоненты. Лаборант вашей команды может создавать защитные реагенты!",
                 mainOverlay: `
                     <div class="tutorial-main-content">
@@ -62,7 +62,7 @@ class TutorialSystem {
             {
                 id: 5,
                 title: "Прощание",
-                characterImage: "images/stage1.png",
+                characterImage: "images/stage1L.png",
                 dialogue: "Теперь ты готов к проведению исследованийй! Следи за статистикой команды и помогай создавать как можно больше реагентов! Удачи!",
                 mainOverlay: null,
                 duration: 8000,
