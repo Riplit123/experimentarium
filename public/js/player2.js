@@ -5,7 +5,7 @@ class TutorialSystem {
                 id: 1,
                 title: "Приветствие",
                 characterImage: "images/stage1L.png",
-                dialogue: "Добро пожаловать в исследовательскую лабораторию!",
+                dialogue: "Добро пожаловать в исследовательскую лабораторию, меня зовут Валерия!",
                 mainOverlay: null,
                 duration: 8000,
                 showMainOverlay: false
