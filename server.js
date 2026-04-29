@@ -1002,46 +1002,64 @@ io.on('connection', (socket) => {
 
   // ---- Disconnect ----
   socket.on('disconnect', () => {
-  const lobbyId = socket.data.lobbyId;
-  const teamId = socket.data.teamId;
-
-  if (lobbyId && gameState.lobbies[lobbyId]) {
-    const lobby = gameState.lobbies[lobbyId];
-
-    // Удаляем сокет из общих игроков лобби
-    delete lobby.players[socket.id];
-
-    // Если игрок был в команде, удаляем его оттуда
-    if (teamId && lobby.teams[teamId]) {
-      const team = lobby.teams[teamId];
-      const player = team.players[socket.id];
-      if (player) {
-        delete team.players[socket.id];
-        console.log(`Игрок отключен: ${player.playerName} из команды ${team.name}`);
-        io.to(teamId).emit('player-left', {
-          playerId: player.playerId,
-          playerName: player.playerName,
-          playersCount: Object.keys(team.players).length,
-          roomPlayers: Object.values(team.players)
-        });
+    const lobbyId = socket.data.lobbyId;
+    const teamId = socket.data.teamId;
+    if (lobbyId && gameState.lobbies[lobbyId]) {
+      const lobby = gameState.lobbies[lobbyId];
+      delete lobby.players[socket.id];
+      if (teamId && lobby.teams[teamId]) {
+        const team = lobby.teams[teamId];
+        const player = team.players[socket.id];
+        if (player) {
+          delete team.players[socket.id];
+          console.log(`Игрок отключен: ${player.playerName} из команды ${team.name}`);
+          io.to(teamId).emit('player-left', {
+            playerId: player.playerId,
+            playerName: player.playerName,
+            playersCount: Object.keys(team.players).length,
+            roomPlayers: Object.values(team.players)
+          });
+        }
+        const teamsList = Object.values(lobby.teams).map(t => ({
+          id: t.id,
+          name: t.name,
+          icon: t.icon,
+          playersCount: Object.keys(t.players).length
+        }));
+        io.to(lobbyId).emit('teams-updated', { lobbyId, teams: teamsList });
       }
-
-      // Оповещаем об изменении состава команд в лобби
-      const teamsList = Object.values(lobby.teams).map(t => ({
-        id: t.id,
-        name: t.name,
-        icon: t.icon,
-        playersCount: Object.keys(t.players).length
-      }));
-      io.to(lobbyId).emit('teams-updated', { lobbyId, teams: teamsList });
+      // НОВЫЙ КОД: Вместо мгновенного удаления даем время на переход между страницами
+            if (Object.keys(lobby.players).length === 0) {
+                // Проверяем, есть ли игроки внутри команд этого лобби
+                const hasPlayersInTeams = Object.values(lobby.teams).some(
+                    team => Object.keys(team.players).length > 0
+                );
+                
+                if (!hasPlayersInTeams) {
+                    console.log(`Лобби ${lobbyId} пустое. Ожидаем переподключения...`);
+                    // Даем 2 минуты (120000 мс) на выбор роли, прежде чем удалять лобби
+                    setTimeout(() => {
+                        const currentLobby = gameState.lobbies[lobbyId];
+                        // Если лобби еще существует, проверяем, не зашел ли кто-то за это время
+                        if (currentLobby) {
+                            const stillEmpty = Object.keys(currentLobby.players).length === 0 && 
+                                !Object.values(currentLobby.teams).some(t => Object.keys(t.players).length > 0);
+                            
+                            if (stillEmpty) {
+                                delete gameState.lobbies[lobbyId];
+                                console.log(`Лобби ${lobbyId} окончательно удалено (по таймауту)`);
+                                broadcastLobbies();
+                                updateLeaderboard();
+                            }
+                        }
+                    }, 120000);
+                }
+            }
+      broadcastLobbies();
+      updateLeaderboard();
     }
-
-    // Обновляем общие списки (без удаления лобби)
-    broadcastLobbies();
-    updateLeaderboard();
-  }
+  });
 });
-
 // ================== ЗАПУСК СЕРВЕРА ==================
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
